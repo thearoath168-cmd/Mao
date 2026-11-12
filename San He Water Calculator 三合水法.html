@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>San He Water Calculator 三合水法</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  :root{
+    --bg:#f6f1e7; --paper:#fffdf8; --ink:#2a2118; --muted:#7a6a58; --line:#e3d8c6;
+    --red:#a8322a; --red-soft:#f4dcd8; --gold:#b8862b; --gold-soft:#f5ead2;
+    --good:#2f7d4f; --good-soft:#dcefe2; --ok:#6d8f3a; --ok-soft:#eef3dc;
+    --warn:#b7791f; --warn-soft:#f8ecd4; --bad:#a8322a; --bad-soft:#f6dedb;
+    --water:#2867b2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.5}
+  .zh{font-family:"Noto Serif SC",serif}
+  .wrap{max-width:1040px;margin:0 auto;padding:20px 16px 48px}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:2px solid var(--red);padding-bottom:12px;margin-bottom:18px}
+  h1{margin:0;font-size:24px;letter-spacing:.2px}
+  h1 .zh{color:var(--red);margin-left:6px}
+  .sub{color:var(--muted);font-size:13px;margin-top:2px}
+  .seal{width:46px;height:46px;border:2px solid var(--red);color:var(--red);border-radius:6px;display:grid;place-items:center;font-family:"Noto Serif SC",serif;font-weight:700;font-size:15px;line-height:1.05;text-align:center;flex:none}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+  .card h2{margin:0 0 10px;font-size:16px}
+  .card h2 .zh{color:var(--red);font-weight:700;margin-left:4px}
+  .inputs{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:760px){.inputs{grid-template-columns:1.3fr 1fr}}
+  @media(min-width:1000px){.inputs{grid-template-columns:1.4fr 1fr 1fr 1fr}}
+  label.lab{display:block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
+  .grid12{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 0;font-family:"Noto Serif SC",serif;font-size:16px;cursor:pointer;color:var(--ink)}
+  .chip:hover{border-color:var(--gold)}
+  .chip.on{background:var(--red);border-color:var(--red);color:#fff}
+  .seg{display:flex;flex-direction:column;gap:6px}
+  .segbtn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:9px 10px;text-align:left;cursor:pointer;font-size:14px;color:var(--ink)}
+  .segbtn small{display:block;color:var(--muted);font-size:12px}
+  .segbtn.on{border-color:var(--water);background:#e8f0fa;box-shadow:inset 3px 0 0 var(--water)}
+  select{width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:15px;font-family:inherit;color:var(--ink)}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  .results{display:grid;grid-template-columns:1fr;gap:16px}
+  @media(min-width:900px){.results{grid-template-columns:1.05fr 1fr}}
+  .big{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .facing{font-family:"Noto Serif SC",serif;font-size:44px;font-weight:700;color:var(--red);line-height:1}
+  .pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600}
+  .p-frame{background:var(--gold-soft);color:#7a5714}
+  .p-flow{background:#e8f0fa;color:var(--water)}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin-top:12px;font-size:14px}
+  .kv dt{color:var(--muted)}
+  .kv dd{margin:0}
+  .rule{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;background:#fff}
+  .rule.best{border-color:var(--red);background:#fff7f5}
+  .rule .t{font-weight:600}
+  .rule .m{font-family:"Noto Serif SC",serif;font-size:20px;color:var(--red);font-weight:700;margin-right:8px}
+  .tag{font-size:11px;padding:1px 7px;border-radius:999px;margin-left:6px;vertical-align:2px}
+  .tag.std{background:var(--good-soft);color:var(--good)}
+  .tag.var{background:var(--warn-soft);color:var(--warn)}
+  .tag.alt{background:#eee;color:#555}
+  .verdict{border-radius:10px;padding:10px 12px;margin-top:10px;font-size:14px}
+  .v-good{background:var(--good-soft);color:#1f5534}
+  .v-ok{background:var(--ok-soft);color:#4a6324}
+  .v-bad{background:var(--bad-soft);color:#7a221c}
+  .v-warn{background:var(--warn-soft);color:#7a4f12}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left}
+  th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+  td.zh,td .zh{font-size:16px}
+  tr.hl td{background:#fff3ef}
+  tr.cur td{background:var(--gold-soft)}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:0}
+  .legend{display:flex;flex-wrap:wrap;gap:10px 16px;font-size:12px;color:var(--muted);margin-top:8px}
+  .chart svg{width:100%;height:auto;display:block;max-width:460px;margin:0 auto}
+  .note{font-size:12px;color:var(--muted)}
+  footer{font-size:12px;color:var(--muted);margin-top:20px;border-top:1px solid var(--line);padding-top:12px}
+  .scroll{overflow-x:auto}
+  .hb{display:grid;grid-template-columns:1fr;gap:10px}
+  @media(min-width:760px){.hb{grid-template-columns:repeat(3,1fr)}}
+  .hbbox{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff}
+  .hbbox.hq{background:#fdf6dc;border-color:#e8cf7a}
+  .hbbox.bs{background:#f3ecf6;border-color:#c9b2d6}
+  .hbbig{font-size:26px;font-weight:700;margin:2px 0 4px}
+  .brand{background:var(--red);color:#fff;border-radius:10px;padding:9px 14px;margin-bottom:14px;font-weight:700;font-size:15px;letter-spacing:.4px;text-align:center;box-shadow:inset 0 0 0 2px #c9a24a}
+  .brand span{font-weight:500;color:#f5e6c4;margin-left:4px}
+  .calcrow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+  .changed{color:var(--red);font-weight:600}
+  .calc{background:var(--red);color:#fff;border:none;border-radius:10px;padding:12px 28px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 2px 0 #7a221c}
+  .calc:hover{background:#922a23}
+  .calc:active{transform:translateY(1px);box-shadow:none}
+  .calc.pulse{animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 2px 0 #7a221c,0 0 0 0 rgba(168,50,42,.45)}50%{box-shadow:0 2px 0 #7a221c,0 0 0 8px rgba(168,50,42,0)}}
+  .fadein{animation:fade .45s ease}
+  @keyframes fade{from{opacity:.2;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @media(max-width:520px){.calc{width:100%}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useMemo } = React;
+
+// 12 double mountains, clockwise from north
+const PAIRS = ['壬子','癸丑','艮寅','甲卯','乙辰','巽巳','丙午','丁未','坤申','庚酉','辛戌','乾亥'];
+const DIR = ['N','NNE','NE','ENE','ESE','SE','S','SSW','SW','WSW','W','NW'];
+
+const STAGES = [
+  {zh:'长生', en:'Birth', cls:'good'},
+  {zh:'沐浴', en:'Bath', cls:'warn'},
+  {zh:'冠带', en:'Cap', cls:'good'},
+  {zh:'临官', en:'Office', cls:'good'},
+  {zh:'帝旺', en:'Peak', cls:'good'},
+  {zh:'衰',   en:'Decline', cls:'ok'},
+  {zh:'病',   en:'Sickness', cls:'bad'},
+  {zh:'死',   en:'Death', cls:'bad'},
+  {zh:'墓',   en:'Tomb', cls:'bad'},
+  {zh:'绝',   en:'Extinction', cls:'bad'},
+  {zh:'胎',   en:'Embryo', cls:'warn'},
+  {zh:'养',   en:'Nurturing', cls:'ok'},
+];
+const CLS = {
+  good:{fill:'#dcefe2', stroke:'#2f7d4f', label:'Most lucky — welcome incoming water'},
+  ok:{fill:'#eef3dc', stroke:'#6d8f3a', label:'Next lucky'},
+  warn:{fill:'#f8ecd4', stroke:'#b7791f', label:'Next unlucky'},
+  bad:{fill:'#f6dedb', stroke:'#a8322a', label:'Most unlucky — only for water to leave'},
+};
+
+const FRAMES = [
+  {key:'water', zh:'水局', en:'Water frame', tri:'申子辰', follow:'坤壬乙', yang:'壬', yangBirth:8, yin:'辛', yinBirth:0, tomb:4, saying:'辛壬会而聚辰'},
+  {key:'wood',  zh:'木局', en:'Wood frame',  tri:'亥卯未', follow:'乾甲丁', yang:'甲', yangBirth:11, yin:'癸', yinBirth:3, tomb:7, saying:'金羊未收癸甲之灵'},
+  {key:'fire',  zh:'火局', en:'Fire frame',  tri:'寅午戌', follow:'艮丙辛', yang:'丙', yangBirth:2, yin:'乙', yinBirth:6, tomb:10, saying:'乙丙交而趋戌'},
+  {key:'metal', zh:'金局', en:'Metal frame', tri:'巳酉丑', follow:'巽庚癸', yang:'庚', yangBirth:5, yin:'丁', yinBirth:9, tomb:1, saying:'斗牛丑纳丁庚之气'},
+];
+
+// facing rules from the textbook (stages counted in the YANG layout)
+const RULES = [
+  {face:4, exit:8, flow:'L', zh:'旺向墓流', en:'Peak facing, tomb flow', std:true},
+  {face:0, exit:8, flow:'R', zh:'生向墓流', en:'Birth facing, tomb flow', std:true, note:'Same mountain as the yin peak'},
+  {face:7, exit:8, flow:'L', zh:'死向墓流', en:'Death facing, tomb flow', std:true, note:'"Self-peak facing" 自旺向 — borrows the storehouse to drain water'},
+  {face:9, exit:8, flow:'R', zh:'绝向墓流', en:'Extinction facing, tomb flow', std:true, note:'"Self-birth facing" 自生向 — borrows the storehouse to drain water'},
+  {face:8, exit:9, flow:'L', zh:'墓向绝流', en:'Tomb facing, extinction flow', std:true},
+  {face:11, exit:9, flow:'R', zh:'养向绝流', en:'Nurturing facing, extinction flow', std:true},
+  {face:9, exit:9, flow:'R', zh:'绝向绝流', en:'Extinction facing, extinction flow', std:false, note:'Birth facing with water leaving straight in front 生向当面出水'},
+  {face:9, exit:10, flow:'L', zh:'绝向胎流', en:'Extinction facing, embryo flow', std:false, note:'Also called birth facing, bath flow 生向沐流'},
+  {face:5, exit:10, flow:'L', zh:'衰向胎流', en:'Decline facing, embryo flow', std:false},
+  {face:1, exit:10, flow:'R', zh:'沐向胎流', en:'Bath facing, embryo flow', std:false, note:'Also called peak facing, bath flow 旺向沐流'},
+  {face:10, exit:10, flow:'R', zh:'胎向胎流', en:'Embryo facing, embryo flow', std:false, note:'Water leaves straight in front'},
+];
+
+const mod = n => ((n % 12) + 12) % 12;
+const frameOf = exit => FRAMES.find(f => mod(exit - f.tomb) <= 2);
+const yangStage = (f, i) => mod(i - f.yangBirth);
+const yinStage = (f, i) => mod(f.yinBirth - i);
+const atYang = (f, s) => mod(f.yangBirth + s);
+const atYin = (f, s) => mod(f.yinBirth - s);
+
+function solve(exit, flow) {
+  const f = frameOf(exit);
+  const e = yangStage(f, exit);
+  const stageOf = i => flow === 'L' ? yangStage(f, i) : yinStage(f, i);
+  const rules = RULES.filter(r => r.exit === e && r.flow === flow)
+    .sort((a, b) => (b.std - a.std))
+    .map(r => ({...r, mountain: atYang(f, r.face)}));
+  const extra = [];
+  if (e === 8) {
+    if (flow === 'L') { const m = atYang(f, 5); extra.push({mountain:m, label:`face the branch ${PAIRS[m][1]}`, zh:'衰向', en:'Decline facing (yang branch 辰戌丑未)'}); }
+    else { const m = atYin(f, 5); extra.push({mountain:m, label:`face the stem ${PAIRS[m][0]}`, zh:'衰向', en:'Decline facing (yin stem 乙辛丁癸)'}); }
+  }
+  const best = rules[0];
+  const welcome = [0,2,3,4].map(s => flow === 'L' ? atYang(f, s) : atYin(f, s)).filter(m => m !== best.mountain);
+  return { f, e, rules, extra, best, stageOf, welcome };
+}
+
+// ---------- Huang Quan & Ba Sha ----------
+const MTS = ['壬','子','癸','丑','艮','寅','甲','卯','乙','辰','巽','巳','丙','午','丁','未','坤','申','庚','酉','辛','戌','乾','亥'];
+const mIdx = ch => MTS.indexOf(ch);
+const PALACE = ['坎','艮','震','巽','离','坤','兑','乾'];
+const PALACE_EN = ['Kan, north','Gen, north-east','Zhen, east','Xun, south-east','Li, south','Kun, south-west','Dui, west','Qian, north-west'];
+// 八煞 (Dragon Eight Killings): 坎龙坤兔震山猴，巽鸡乾马兑蛇头，艮虎离猪为八煞
+const BASHA = {坎:'辰', 坤:'卯', 震:'申', 巽:'酉', 乾:'午', 兑:'巳', 艮:'寅', 离:'亥'};
+// 八路四路黄泉: 庚丁坤上是黄泉，乙丙须防巽水先，甲癸向中忧见艮，辛壬水路怕当乾
+const HQ = {庚:['坤'], 丁:['坤'], 乙:['巽'], 丙:['巽'], 甲:['艮'], 癸:['艮'], 辛:['乾'], 壬:['乾'],
+            坤:['庚','丁'], 巽:['乙','丙'], 艮:['甲','癸'], 乾:['辛','壬']};
+const pairOf = j => Math.floor(j / 2);
+
+function hqbs(face, exit, welcome) {
+  const sit = (face + 12) % 24;
+  const p = Math.floor(sit / 3);
+  const bs = mIdx(BASHA[PALACE[p]]);
+  const hq = (HQ[MTS[face]] || []).map(mIdx);
+  const exitSingles = [2 * exit, 2 * exit + 1];
+  const hqHit = hq.filter(j => exitSingles.includes(j));
+  const bsWelcome = welcome.includes(pairOf(bs));
+  const bsExit = exitSingles.includes(bs);
+  return { face, sit, p, bs, hq, hqHit, bsWelcome, bsExit, branchFacing: hq.length === 0 };
+}
+
+// ---------- chart ----------
+const C = 270, R0 = 118, R = 200, R2 = 234;
+const ang = i => (i - 6) * 30 - 7.5;               // pair i, south at top, clockwise
+const sang = j => (j - 1) * 15 - 180;              // single mountain j
+const pt = (r, a) => { const t = a * Math.PI / 180; return [C + r * Math.sin(t), C - r * Math.cos(t)]; };
+function ring(r1, r2, a, h) {
+  const [x1,y1] = pt(r2, a-h), [x2,y2] = pt(r2, a+h), [x3,y3] = pt(r1, a+h), [x4,y4] = pt(r1, a-h);
+  return `M${x1} ${y1}A${r2} ${r2} 0 0 1 ${x2} ${y2}L${x3} ${y3}A${r1} ${r1} 0 0 0 ${x4} ${y4}Z`;
+}
+function arc(r, a0, a1, cw) {
+  const d = cw ? ((a1 - a0) % 360 + 360) % 360 : ((a0 - a1) % 360 + 360) % 360;
+  const [x0,y0] = pt(r, a0), [x1,y1] = pt(r, a1);
+  return `M${x0} ${y0}A${r} ${r} 0 ${d > 180 ? 1 : 0} ${cw ? 1 : 0} ${x1} ${y1}`;
+}
+
+function Wheel({ res, exit, flow, hb }) {
+  const { f, best, stageOf } = res;
+  const fa = ang(best.mountain), xa = ang(exit);
+  const cw = flow === 'L';
+  const start = cw ? fa - 105 : fa + 105;
+  const [hx, hy] = pt(R0 - 26, sang(hb.face));
+  // outer tags per single mountain
+  const tags = MTS.map(() => []);
+  hb.hq.forEach(j => tags[j].push({t:'黄泉', c:'#9a6b00'}));
+  tags[hb.bs].push({t:'八煞', c:'#5b2d73'});
+  tags[hb.face].push({t:'向', c:'#a8322a'});
+  tags[hb.sit].push({t:'坐', c:'#2a2118'});
+  const exitStack = Math.max(tags[2 * exit].length, tags[2 * exit + 1].length);
+  const singleStyle = j => {
+    if (j === hb.face) return {fill:'#a8322a', ink:'#fff'};
+    if (j === hb.sit) return {fill:'#2a2118', ink:'#fff'};
+    if (j === hb.bs) return {fill:'#5b2d73', ink:'#fff'};
+    if (hb.hq.includes(j)) return {fill:'#f1c84b', ink:'#2a2118'};
+    return {fill:'#fffdf8', ink:'#2a2118'};
+  };
+  return (
+    <svg viewBox="0 0 540 560" role="img" aria-label="24 mountains chart with twelve stages, Huang Quan and Ba Sha">
+      <defs>
+        <marker id="wa" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2867b2"/></marker>
+        <marker id="fa" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a8322a"/></marker>
+      </defs>
+      {PAIRS.map((p, i) => {
+        const s = STAGES[stageOf(i)], c = CLS[s.cls];
+        const a = ang(i);
+        const [tx, ty] = pt(159, a);
+        const isBest = i === best.mountain;
+        return (
+          <g key={i}>
+            <path d={ring(R0, R, a, 15)} fill={c.fill} stroke={isBest ? '#a8322a' : '#cdbfa9'} strokeWidth={isBest ? 3 : 1}/>
+            <text x={tx} y={ty - 4} textAnchor="middle" fontSize="17" fontWeight="700" fontFamily="Noto Serif SC, serif" fill="#2a2118">{p}</text>
+            <text x={tx} y={ty + 13} textAnchor="middle" fontSize="11" fill={c.stroke} fontWeight="600">{s.zh} {s.en}</text>
+          </g>
+        );
+      })}
+      {MTS.map((m, j) => {
+        const a = sang(j), st = singleStyle(j);
+        const [tx, ty] = pt((R + R2) / 2, a);
+        return (
+          <g key={'s' + j}>
+            <path d={ring(R, R2, a, 7.5)} fill={st.fill} stroke="#cdbfa9" strokeWidth="1"/>
+            <text x={tx} y={ty + 5} textAnchor="middle" fontSize="14" fontWeight="700" fontFamily="Noto Serif SC, serif" fill={st.ink}>{m}</text>
+            {tags[j].map((tg, k) => { const [lx, ly] = pt(R2 + 13 + 15 * k, a); return <text key={k} x={lx} y={ly + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill={tg.c}>{tg.t}</text>; })}
+          </g>
+        );
+      })}
+      {(() => { const a = ang(exit); const [ex, ey] = pt(R2, a); const [lx, ly] = pt(R2 + 13 + 15 * exitStack, a); return <g><circle cx={ex} cy={ey} r="5" fill="#2867b2"/><text x={lx} y={ly + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="#2867b2">水口</text></g>; })()}
+      <path d={arc(96, start, xa, cw)} fill="none" stroke="#2867b2" strokeWidth="4" strokeLinecap="round" markerEnd="url(#wa)" opacity="0.9"/>
+      <line x1={C} y1={C} x2={hx} y2={hy} stroke="#a8322a" strokeWidth="2.5" markerEnd="url(#fa)"/>
+      <rect x={C - 34} y={C - 14} width="68" height="28" rx="6" fill="#fffdf8" stroke="#a8322a"/>
+      <text x={C} y={C + 5} textAnchor="middle" fontSize="13" fontWeight="700" fill="#a8322a">House</text>
+      <text x={C} y={C + 34} textAnchor="middle" fontSize="11" fill="#2a2118">{f.zh} · {cw ? f.yang : f.yin} {cw ? 'clockwise' : 'anticlockwise'}</text>
+      <text x={C} y="552" textAnchor="middle" fontSize="11" fill="#7a6a58">South 南 at top · blue arc = water path · red arrow = facing 向</text>
+    </svg>
+  );
+}
+
+// ---------- app ----------
+function App() {
+  // selections (draft) — applied only when Calculate is pressed
+  const [selExit, setExit] = useState(10);   // 辛戌
+  const [selFlow, setFlow] = useState('L');
+  const [selHouse, setHouse] = useState('');
+  const [selExact, setExact] = useState('');
+  const [applied, setApplied] = useState({exit:10, flow:'L', house:'', exact:''});
+  const [flash, setFlash] = useState(0);
+  const { exit, flow, house, exact } = applied;
+  const dirty = selExit !== exit || selFlow !== flow || selHouse !== house || selExact !== exact;
+  const calculate = () => {
+    setApplied({exit: selExit, flow: selFlow, house: selHouse, exact: selExact});
+    setFlash(n => n + 1);
+    setTimeout(() => { const el = document.getElementById('results'); if (el) el.scrollIntoView({behavior:'smooth', block:'start'}); }, 50);
+  };
+  const res = useMemo(() => solve(exit, flow), [exit, flow]);
+  const { f, e, rules, extra, best, stageOf, welcome } = res;
+  const faceSingle = exact !== '' ? Number(exact) : 2 * (house !== '' ? Number(house) : best.mountain);
+  const faceSource = exact !== '' ? 'chosen exactly' : house !== '' ? 'from your house facing (stem half)' : 'from the best facing (stem half)';
+  const hb = useMemo(() => hqbs(faceSingle, exit, welcome), [faceSingle, exit, welcome.join()]);
+
+  let verdict = null;
+  if (house !== '') {
+    const h = Number(house);
+    const s = STAGES[stageOf(h)];
+    const rule = rules.find(r => r.mountain === h);
+    const ex = extra.find(x => x.mountain === h);
+    if (h === best.mountain) verdict = {cls:'v-good', text:`Your house already faces the best facing, ${PAIRS[h]} (${rule.zh} · ${rule.en}).`};
+    else if (rule) verdict = {cls:'v-good', text:`${PAIRS[h]} fits the rule ${rule.zh} (${rule.en})${rule.std ? '' : ', a variant pattern'}. The textbook's first choice here is ${PAIRS[best.mountain]}.`};
+    else if (ex) verdict = {cls:'v-ok', text:`${PAIRS[h]} works as a decline facing — ${ex.label}. Quick success but shorter-lived; the first choice is ${PAIRS[best.mountain]}.`};
+    else {
+      const bad = s.cls === 'bad' || s.cls === 'warn';
+      verdict = {cls: bad ? 'v-bad' : 'v-warn', text:`${PAIRS[h]} sits on the ${s.zh} ${s.en} stage of this layout and matches no facing rule for this water. Consider turning toward ${PAIRS[best.mountain]}${extra[0] ? ` (or ${extra[0].label})` : ''}.`};
+    }
+  }
+
+  return (
+    <div className="wrap">
+      <div className="brand">Khmer Fortune Teller <span>by Kang Puthearoath</span></div>
+      <header>
+        <div>
+          <h1>San He Water Calculator<span className="zh">三合水法</span></h1>
+          <div className="sub">Yang Gong twelve-stage water formula · frame, facing, Huang Quan and Ba Sha on one 24-mountain chart</div>
+        </div>
+        <div className="seal">三合<br/>水法</div>
+      </header>
+
+      <section className="card">
+        <div className="inputs">
+          <div>
+            <label className="lab">1 · Water exit 水口 (heaven plate)</label>
+            <div className="grid12">
+              {[6,7,8,9,10,11,0,1,2,3,4,5].map(i => (
+                <button key={i} className={'chip' + (selExit === i ? ' on' : '')} onClick={() => setExit(i)} title={DIR[i]}>{PAIRS[i]}</button>
+              ))}
+            </div>
+            <div className="hint">Where you last see the water leave the site, read on the 缝针 ring.</div>
+          </div>
+          <div>
+            <label className="lab">2 · Water flow 水的来去</label>
+            <div className="seg">
+              <button className={'segbtn' + (selFlow === 'L' ? ' on' : '')} onClick={() => setFlow('L')}>Left → right 左水到右<small>yang stem, count clockwise</small></button>
+              <button className={'segbtn' + (selFlow === 'R' ? ' on' : '')} onClick={() => setFlow('R')}>Right → left 右水到左<small>yin stem, count anticlockwise</small></button>
+            </div>
+            <div className="hint">Stand at the house, back to the mountain, looking out the front.</div>
+          </div>
+          <div>
+            <label className="lab">3 · Current house facing (optional)</label>
+            <select value={selHouse} onChange={e => setHouse(e.target.value)}>
+              <option value="">— planning a new site —</option>
+              {PAIRS.map((p, i) => <option key={i} value={i}>{p} · {DIR[i]}</option>)}
+            </select>
+            <div className="hint">Pick a facing to check an existing house.</div>
+          </div>
+          <div>
+            <label className="lab">4 · Exact facing 向 for 黄泉 &amp; 八煞</label>
+            <select value={selExact} onChange={e => setExact(e.target.value)}>
+              <option value="">Auto — stem half of the facing above</option>
+              {MTS.map((m, j) => <option key={j} value={j}>{m} 向 · sitting {MTS[(j + 12) % 24]}</option>)}
+            </select>
+            <div className="hint">Huang Quan and Ba Sha need the single mountain (24 mountains), not the pair.</div>
+          </div>
+        </div>
+        <div className="calcrow">
+          <div className="note">
+            Selected: <span className="zh"><b>{PAIRS[selExit]}</b></span> 水口 · {selFlow === 'L' ? 'left → right' : 'right → left'}{selHouse !== '' && <> · house <span className="zh"><b>{PAIRS[Number(selHouse)]}</b></span></>}{selExact !== '' && <> · exact 向 <span className="zh"><b>{MTS[Number(selExact)]}</b></span></>}
+            {dirty && <span className="changed"> — press Calculate to update</span>}
+          </div>
+          <button className={'calc' + (dirty ? ' pulse' : '')} onClick={calculate}>Calculate 计算</button>
+        </div>
+      </section>
+
+      <div id="results" key={flash} className="results fadein">
+        <section className="card">
+          <h2>Result<span className="zh">结果</span></h2>
+          <div className="big">
+            <div>
+              <div className="note">Best facing 立向</div>
+              <div className="facing">{PAIRS[best.mountain]}</div>
+            </div>
+            <div>
+              <span className="pill p-frame">{f.en} {f.zh}</span>{' '}
+              <span className="pill p-flow">{flow === 'L' ? 'Left → right' : 'Right → left'}</span>
+              <div style={{marginTop:6,fontWeight:600}}>{best.zh} · {best.en}</div>
+              <div className="note">{DIR[best.mountain]} · {best.std ? 'standard pattern 正局' : 'variant pattern 变局'}</div>
+            </div>
+          </div>
+          <dl className="kv">
+            <dt>Frame</dt><dd><span className="zh">{f.tri}</span> + <span className="zh">{f.follow}</span> · <span className="zh">{f.saying}</span></dd>
+            <dt>Stem used</dt><dd><span className="zh">{flow === 'L' ? f.yang : f.yin}</span> ({flow === 'L' ? 'yang' : 'yin'}), birth at <span className="zh">{PAIRS[flow === 'L' ? f.yangBirth : f.yinBirth]}</span>, {flow === 'L' ? 'clockwise' : 'anticlockwise'}</dd>
+            <dt>Water exit</dt><dd><span className="zh">{PAIRS[exit]}</span> = <span className="zh">{STAGES[e].zh}</span> {STAGES[e].en} of {f.yang} (yang count)</dd>
+            <dt>Good water from</dt><dd><span className="zh">{welcome.map(m => PAIRS[m]).join(' · ')}</span> <span className="note">(birth, cap, office, peak)</span></dd>
+          </dl>
+
+          <div style={{marginTop:12}} className="note">All facings that fit this water</div>
+          {rules.map((r, k) => (
+            <div key={r.zh} className={'rule' + (k === 0 ? ' best' : '')}>
+              <span className="m">{PAIRS[r.mountain]}</span>
+              <span className="t">{r.zh} · {r.en}</span>
+              <span className={'tag ' + (r.std ? 'std' : 'var')}>{r.std ? '正局 standard' : '变局 variant'}</span>
+              {r.note && <div className="note" style={{marginTop:3}}>{r.note}</div>}
+            </div>
+          ))}
+          {extra.map(x => (
+            <div key={x.zh} className="rule">
+              <span className="m">{PAIRS[x.mountain]}</span>
+              <span className="t">{x.zh} · {x.en}</span><span className="tag alt">second choice</span>
+              <div className="note" style={{marginTop:3}}>{x.label}: quicker but shorter-lived success.</div>
+            </div>
+          ))}
+          {verdict && <div className={'verdict ' + verdict.cls}><b>Your house: </b>{verdict.text}</div>}
+        </section>
+
+        <section className="card chart">
+          <h2>Twelve-stage chart<span className="zh">十二长生</span></h2>
+          <Wheel res={res} exit={exit} flow={flow} hb={hb}/>
+          <div className="legend">
+            {Object.values(CLS).map(c => <span key={c.label}><span className="dot" style={{background:c.fill,border:`1px solid ${c.stroke}`}}></span>{c.label}</span>)}
+            <span><span className="dot" style={{background:'#f1c84b'}}></span>黄泉 Huang Quan</span>
+            <span><span className="dot" style={{background:'#5b2d73'}}></span>八煞 Ba Sha</span>
+            <span><span className="dot" style={{background:'#a8322a'}}></span>向 facing</span>
+            <span><span className="dot" style={{background:'#2a2118'}}></span>坐 sitting</span>
+          </div>
+        </section>
+      </div>
+
+      <section className="card">
+        <h2>Huang Quan &amp; Ba Sha<span className="zh">黄泉 · 八煞</span></h2>
+        <div className="hb">
+          <div className="hbbox">
+            <div className="note">Facing 向 / sitting 坐</div>
+            <div className="hbbig"><span className="zh" style={{color:'#a8322a'}}>{MTS[hb.face]}</span> / <span className="zh">{MTS[hb.sit]}</span></div>
+            <div className="note">Facing {faceSource}. Sitting palace <span className="zh">{PALACE[hb.p]}</span> ({PALACE_EN[hb.p]}).</div>
+          </div>
+          <div className="hbbox hq">
+            <div className="note">黄泉 Huang Quan (Yellow Springs)</div>
+            <div className="hbbig zh">{hb.branchFacing ? '—' : hb.hq.map(j => MTS[j]).join(' · ')}</div>
+            <div className="note">{hb.branchFacing ? 'The eight-road rule covers stem and trigram facings only. Pick the stem half of your facing in box 4.' : 'Water may come IN from here (救贫黄泉, "saves the poor") but must not LEAVE here (杀人黄泉, "kills people").'}</div>
+          </div>
+          <div className="hbbox bs">
+            <div className="note">八煞 Ba Sha (Eight Killings)</div>
+            <div className="hbbig zh">{MTS[hb.bs]}</div>
+            <div className="note">For a <span className="zh">{PALACE[hb.p]}</span> sitting. Avoid incoming water, a road or path, a door, or sharp corners pointing from here.</div>
+          </div>
+        </div>
+        {!hb.branchFacing && (hb.hqHit.length
+          ? <div className="verdict v-bad"><b>杀人黄泉 warning: </b>the water exit <span className="zh">{PAIRS[exit]}</span> contains the Huang Quan mountain <span className="zh">{hb.hqHit.map(j => MTS[j]).join(' ')}</span>. Water leaving through Huang Quan is the dangerous case; change the facing or move the outflow.</div>
+          : <div className="verdict v-good"><b>Huang Quan clear: </b>the water exit <span className="zh">{PAIRS[exit]}</span> does not drain through <span className="zh">{hb.hq.map(j => MTS[j]).join(' ')}</span>.</div>)}
+        {hb.bsWelcome && <div className="verdict v-warn"><b>Ba Sha caution: </b><span className="zh">{MTS[hb.bs]}</span> lies inside a welcome-water position of this layout (<span className="zh">{PAIRS[pairOf(hb.bs)]}</span>). Keep water there slow and winding, with no road or sharp structure pointing at the house.</div>}
+        {hb.bsExit && <div className="verdict v-ok"><b>Ba Sha at the exit: </b>water leaving through <span className="zh">{MTS[hb.bs]}</span> is generally acceptable; only incoming water and roads from Ba Sha are a problem.</div>}
+        <div className="note" style={{marginTop:10}}>Rules used: 庚丁坤上是黄泉，乙丙须防巽水先，甲癸向中忧见艮，辛壬水路怕当乾 (and the reverse for 坤巽艮乾 facings). 坎龙坤兔震山猴，巽鸡乾马兑蛇头，艮虎离猪为八煞 (read from the sitting palace; some teachers read it from the incoming dragon instead). The textbook marks Huang Quan 黄泉口 at the office 临官 stage of each frame (page 145), which matches these rules for peak facings.</div>
+      </section>
+
+      <section className="card">
+        <h2>Stage by stage<span className="zh">长生排布</span></h2>
+        <div className="scroll">
+          <table>
+            <thead><tr><th>#</th><th>Stage</th><th>Left→right · {f.yang}</th><th>Right→left · {f.yin}</th><th>Water</th></tr></thead>
+            <tbody>
+              {STAGES.map((s, k) => {
+                const mY = atYang(f, k), mI = atYin(f, k);
+                const active = flow === 'L' ? mY : mI;
+                return (
+                  <tr key={k} className={active === best.mountain ? 'hl' : (active === exit ? 'cur' : '')}>
+                    <td>{k + 1}</td>
+                    <td><span className="dot" style={{background:CLS[s.cls].fill,border:`1px solid ${CLS[s.cls].stroke}`}}></span><span className="zh">{s.zh}</span> {s.en}</td>
+                    <td className="zh" style={{fontWeight: flow === 'L' ? 700 : 400, opacity: flow === 'L' ? 1 : .55}}>{PAIRS[mY]}</td>
+                    <td className="zh" style={{fontWeight: flow === 'R' ? 700 : 400, opacity: flow === 'R' ? 1 : .55}}>{PAIRS[mI]}</td>
+                    <td className="note">{s.cls === 'good' ? 'welcome in' : s.cls === 'bad' ? 'drain out only' : s.cls === 'ok' ? 'acceptable' : 'keep calm, avoid'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="note" style={{marginTop:8}}>Red row = best facing · gold row = water exit. Cap 冠带 and tomb 墓 fall on the same mountain in both layouts.</div>
+      </section>
+
+      <section className="card">
+        <h2>The four frames<span className="zh">三合四大局</span></h2>
+        <div className="scroll">
+          <table>
+            <thead><tr><th>Frame</th><th>Water exits at</th><th>Left→right: stem · peak</th><th>Right→left: stem · peak</th><th>Tomb</th></tr></thead>
+            <tbody>
+              {FRAMES.map(fr => (
+                <tr key={fr.key} className={fr.key === f.key ? 'cur' : ''}>
+                  <td>{fr.en} <span className="zh">{fr.zh}</span></td>
+                  <td className="zh">{[0,1,2].map(d => PAIRS[mod(fr.tomb + d)]).join(' ')}</td>
+                  <td><span className="zh">{fr.yang} · {PAIRS[atYang(fr, 4)]}</span></td>
+                  <td><span className="zh">{fr.yin} · {PAIRS[atYin(fr, 4)]}</span></td>
+                  <td className="zh">{PAIRS[fr.tomb]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer>
+        Based on the textbook's San He water chapter (地理五诀 exit table) and the Yang Gong facing rules. Water readings use the heaven plate 天盘缝针; the facing is set on the earth plate 地盘正针. Dragons are counted the opposite way (龙逆水顺) — this calculator is for water only. Feng shui is a traditional practice; schools differ and outcomes are not scientifically tested.
+      </footer>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
