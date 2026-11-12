@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>三合四局 · 十二长生 Calculator</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#faf6ee;--card:#fff;--fg:#2a2118;--mut:#7a6c5a;--bd:#e2d6c0;--good:rgba(60,160,90,.22);--bad:rgba(200,70,60,.2);--neu:rgba(150,130,100,.1);--sit:#2a6fdb;--fac:#d83a2e;--wat:#0aa5c8;--acc:#a8621c}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17130e;--card:#221c14;--fg:#f0e6d4;--mut:#a89a84;--bd:#3a3023;--good:rgba(80,190,110,.28);--bad:rgba(230,90,80,.28);--neu:rgba(200,180,140,.1);--sit:#6aa4ff;--fac:#ff6b5e;--wat:#3fd2f0;--acc:#e0a050}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;padding:14px}
+h1{font-size:19px;margin:0 0 2px}.sub{color:var(--mut);font-size:12px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+label{font-size:11px;color:var(--mut);display:block;margin-bottom:3px}
+select{width:100%;font-size:17px;padding:8px 4px;border-radius:9px;border:1px solid var(--bd);background:var(--bg);color:var(--fg)}
+.seg{display:flex;gap:6px;margin-top:10px}.seg button{flex:1;padding:8px 2px;font-size:13px;border-radius:9px;border:1px solid var(--bd);background:var(--bg);color:var(--fg)}
+.seg button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.res{font-size:14px;line-height:1.6}.res b{color:var(--acc)}
+.warn{color:var(--fac);font-weight:600}.ok{color:#2e9d57;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:5px 6px;border-bottom:1px solid var(--bd);text-align:left}
+tr.f td{background:var(--bad)}tr.m td{background:var(--good)}
+.tag{display:inline-block;font-size:10px;padding:1px 5px;border-radius:6px;color:#fff;margin-left:3px}
+svg{width:100%;height:auto;display:block;max-width:420px;margin:0 auto}
+.leg{font-size:11px;color:var(--mut);text-align:center;margin-top:4px}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const {useState}=React;const html=htm.bind(React.createElement);
+const M="壬子癸丑艮寅甲卯乙辰巽巳丙午丁未坤申庚酉辛戌乾亥".split("");
+const DB=["壬子","癸丑","艮寅","甲卯","乙辰","巽巳","丙午","丁未","坤申","庚酉","辛戌","乾亥"];
+const ST=["长生","沐浴","冠带","临官","帝旺","衰","病","死","墓","绝","胎","养"];
+const GOOD=[0,2,3,4],OUT=[5,6,7,8];
+const BUR=[
+{n:"水局",t:"申子辰",ch:[["壬",8],["辛",0]],mo:[4,5,6]},
+{n:"木局",t:"亥卯未",ch:[["甲",11],["癸",3]],mo:[7,8,9]},
+{n:"火局",t:"寅午戌",ch:[["丙",2],["乙",6]],mo:[10,11,0]},
+{n:"金局",t:"巳酉丑",ch:[["庚",5],["丁",9]],mo:[1,2,3]}];
+const QI={壬:"阳水",辛:"阴金",甲:"阳木",癸:"阴水",丙:"阳火",乙:"阴木",庚:"阳金",丁:"阴火"};
+const YANG="子午卯酉甲丙庚壬辰戌丑未";
+const dbl=k=>Math.floor(k/2);
+const C=200;
+const pt=(r,a)=>{const t=a*Math.PI/180;return [C+r*Math.sin(t),C-r*Math.cos(t)]};
+const P=(r,a)=>pt(r,a).map(n=>n.toFixed(1)).join(" ");
+const wedge=(r1,r2,a,b)=>`M${P(r2,a)}A${r2} ${r2} 0 0 1 ${P(r2,b)}L${P(r1,b)}A${r1} ${r1} 0 0 0 ${P(r1,a)}Z`;
+const scr=b=>b+180; // south on top
+const BR="子丑寅卯辰巳午未申酉戌亥",S10="甲乙丙丁戊己庚辛壬癸";
+const NY="海中金,炉中火,大林木,路旁土,剑锋金,山头火,涧下水,城头土,白蜡金,杨柳木,泉中水,屋上土,霹雳火,松柏木,长流水,沙中金,山下火,平地木,壁上土,金箔金,覆灯火,天河水,大驿土,钗钏金,桑柘木,大溪水,沙中土,天上火,石榴木,大海水".split(",");
+const DQ=[["孤虚冷气 凶","bad"],["正气 吉","good"],["龟甲空亡 凶","bad"],["旺气 吉","good"],["阴差阳错 凶","bad"]];
+const JJ=[0,1,2,3,null,4];
+// 穿山七十二龙: 72 slots of 5°, starting at the end of 壬 (352.5°); each 30° block = 1 branch, 6 slots, 4th-of-6 (middle of 干维 mountain) = 大空亡
+function dragon(sl){sl=((sl%72)+72)%72;const b=Math.floor(sl/6),j=JJ[sl%6];if(j===null)return{blank:true};const s=(b%10+2*j)%10;let n=0;while(!(n%10===s&&n%12===b))n++;const ny=NY[Math.floor(n/2)];return{name:S10[s]+BR[b],ny,el:ny.slice(-1),q:DQ[j]}}
+
+function calc(sit,fac,mouth,flow){
+  const mb=dbl(mouth);
+  const bu=BUR.find(x=>x.mo.includes(mb));
+  const left=flow==="auto"?YANG.includes(M[fac]):flow==="L";
+  const [stem,s]=bu.ch[left?0:1];const dir=left?1:-1;
+  const stage=d=>(((d-s)*dir)%12+12)%12;
+  const rows=ST.map((n,i)=>({n,d:((s+i*dir)%12+12)%12}));
+  return {bu,left,stem,s,dir,stage,rows,fs:stage(dbl(fac)),ms:stage(mb),ss:stage(dbl(sit))};
+}
+function facingName(i){return ["正生向","","","","正旺向","","","自生向*","正墓向","自旺向*","","正养向"][i]||null}
+
+function Luopan({r,sit,fac,mouth,dsl,br}){
+  const els=[];
+  for(let d=0;d<12;d++){
+    const bc=scr(352.5+30*d);const st=r.stage(d);
+    const fill=GOOD.includes(st)?"var(--good)":OUT.includes(st)?"var(--bad)":"var(--neu)";
+    els.push(html`<path key=${"w"+d} d=${wedge(88,150,bc-15,bc+15)} fill=${fill} stroke="var(--bd)"/>`);
+    const [x,y]=pt(135,bc),[x2,y2]=pt(104,bc);
+    els.push(html`<text key=${"s"+d} x=${x} y=${y} fontSize="13" fontWeight="700" textAnchor="middle" dominantBaseline="central" fill="var(--fg)">${ST[st]}</text>`);
+    els.push(html`<text key=${"d"+d} x=${x2} y=${y2} fontSize="11" textAnchor="middle" dominantBaseline="central" fill="var(--mut)">${DB[d]}</text>`);
+  }
+  M.forEach((m,k)=>{
+    const a=scr(345+15*k);const [x,y]=pt(72,a);
+    const col=k===sit?"var(--sit)":k===fac?"var(--fac)":"var(--fg)";
+    if(k===sit||k===fac)els.push(html`<circle key=${"c"+k} cx=${x} cy=${y} r="11" fill="none" stroke=${col} strokeWidth="2"/>`);
+    if(k===mouth)els.push(html`<circle key=${"m"+k} cx=${x} cy=${y} r="14" fill="none" stroke="var(--wat)" strokeWidth="2.5" strokeDasharray="3 2"/>`);
+    els.push(html`<text key=${"t"+k} x=${x} y=${y} fontSize="13" textAnchor="middle" dominantBaseline="central" fill=${col} fontWeight=${k===sit||k===fac?700:400}>${m}</text>`);
+  });
+  for(let sl=0;sl<72;sl++){const dg=dragon(sl),a0=scr(352.5+5*sl),cur=sl===dsl;
+    const fill=dg.blank?"var(--neu)":dg.q[1]==="good"?"var(--good)":"var(--bad)";
+    els.push(html`<path key=${"g"+sl} d=${wedge(152,190,a0,a0+5)} fill=${fill} stroke=${cur?"var(--acc)":"var(--bd)"} strokeWidth=${cur?2.5:0.5}/>`);
+    if(!dg.blank){const am=((a0+2.5)%360+360)%360;const [x,y]=pt(171,am);const rot=am<180?am-90:am+90;
+      els.push(html`<text key=${"gt"+sl} x=${x} y=${y} transform=${`rotate(${rot} ${x} ${y})`} fontSize="7.5" textAnchor="middle" dominantBaseline="central" fill="var(--fg)">${dg.name}</text>`);}
+  }
+  {const [x1,y1]=pt(56,scr(br)),[x2,y2]=pt(192,scr(br));els.push(html`<line key="bl" x1=${x1} y1=${y1} x2=${x2} y2=${y2} stroke="var(--sit)" strokeWidth="2"/>`);}
+  // ring lines
+  const rings=[150,88,56].map(q=>html`<circle key=${"r"+q} cx=${C} cy=${C} r=${q} fill="none" stroke="var(--bd)"/>`);
+  // water flow arrow: 长生 -> 墓/mouth
+  const as=scr(352.5+30*r.s),span=r.ms*30,ae=as+r.dir*span;
+  const large=span>180?1:0,sw=r.dir===1?1:0;
+  const arrow=html`<path d=${`M${P(46,as)}A46 46 0 ${large} ${sw} ${P(46,ae)}`} fill="none" stroke="var(--wat)" strokeWidth="3" markerEnd="url(#ah)"/>`;
+  return html`<svg viewBox="0 0 400 400" role="img" aria-label="Luopan">
+    <defs><marker id="ah" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--wat)"/></marker></defs>
+    ${rings}${els}${arrow}
+    <text x=${C} y=${C-8} fontSize="15" fontWeight="700" textAnchor="middle" fill="var(--acc)">${r.bu.t}${r.bu.n.slice(0,1)}局</text>
+    <text x=${C} y=${C+10} fontSize="11" textAnchor="middle" fill="var(--mut)">${r.stem}${QI[r.stem]}·${r.left?"左旋顺":"右旋逆"}</text>
+    <text x=${C} y="14" fontSize="10" textAnchor="middle" fill="var(--mut)">午 ↑ South</text>
+  </svg>`;
+}
+
+function App(){
+  const [sit,setSit]=useState(1);
+  const [fac,setFac]=useState(13);
+  const [mouth,setMouth]=useState(21);
+  const [flow,setFlow]=useState("auto");
+  const [off,setOff]=useState(0);
+  const r=calc(sit,fac,mouth,flow);
+  const br=((345+15*sit+off)%360+360)%360;
+  const dsl=Math.floor((((br-352.5)%360+360)%360)/5);
+  const dg=dragon(dsl);
+  const tri=[0,1,2].map(i=>dragon((sit-1)*3+i));
+  const el=r.bu.n[0];
+  const fname=facingName(r.fs);
+  const badFace=[1,2,3,6,7,9].includes(r.fs);
+  const mv=r.ms===8?html`<span class="ok">水口在墓 ✓ 正确出水</span>`
+    :[3,4,6,7].includes(r.ms)?html`<span class="warn">${ST[r.ms]}位去水 ✗ 杀人大黄泉</span>`
+    :html`<span>${ST[r.ms]}位去水（非标准墓库水口）</span>`;
+  const opts=M.map((m,i)=>html`<option key=${i} value=${i}>${m}</option>`);
+  const sel=(l,v,f)=>html`<div><label>${l}</label><select value=${v} onChange=${e=>f(+e.target.value)}>${opts}</select></div>`;
+  return html`<div>
+    <h1>三合四局 · 十二长生</h1>
+    <div class="sub">Sitting · Facing · Water mouth → 12 长生 on the luopan</div>
+    <div class="card">
+      <div class="grid">
+        ${sel("坐山 Sitting",sit,v=>{setSit(v);setOff(0);setFac((v+12)%24)})}
+        ${sel("向 Facing",fac,setFac)}
+        ${sel("水口 Mouth",mouth,setMouth)}
+      </div>
+      <div class="seg">
+        ${[["auto","自动 Auto"],["L","左水倒右"],["R","右水倒左"]].map(([k,t])=>html`<button key=${k} class=${flow===k?"on":""} onClick=${()=>setFlow(k)}>${t}</button>`)}
+      </div>
+    </div>
+    <div class="card"><label>坐度 Bearing inside ${M[sit]}山: ${br.toFixed(1)}°（${off>0?"+":""}${off}° from centre）</label><input type="range" min="-7.5" max="7" step="0.5" value=${off} onChange=${e=>setOff(+e.target.value)} style=${{width:"100%"}}/></div>
+    <div class="card"><${Luopan} r=${r} sit=${sit} fac=${fac} mouth=${mouth} dsl=${dsl} br=${br}/>
+      <div class="leg"><span style=${{color:"var(--sit)"}}>● 坐</span> · <span style=${{color:"var(--fac)"}}>● 向</span> · <span style=${{color:"var(--wat)"}}>◌ 水口 / 箭头 water</span> · 绿 收 / 红 去 · 外圈 72龙: 绿 正/旺, 红 凶, 灰 大空亡 · 蓝线 坐度</div></div>
+    <div class="card res">
+      <div>局：<b>${r.bu.t}${r.bu.n}</b>（水口 ${DB[dbl(mouth)]}）</div>
+      <div>气：<b>行${r.stem}${QI[r.stem]}气</b>，${r.left?"左旋顺排":"右旋逆排"}，${r.stem}长生在 ${DB[r.s]}</div>
+      <div>向 ${M[fac]}：<b>${ST[r.fs]}</b> ${fname?html`<b>${fname}</b>`:badFace?html`<span class="warn">不宜立向</span>`:"（非六吉向）"}</div>
+      <div>坐 ${M[sit]}：${ST[r.ss]}</div>
+      <div style=${{marginTop:6,paddingTop:6,borderTop:"1px solid var(--bd)"}}>穿山72龙 @ ${br.toFixed(1)}°：${dg.blank?html`<b class="warn">大空亡 (blank slot)</b>`:html`<b>${dg.name}</b>（${dg.ny}·${dg.el}龙）<span class=${dg.q[1]==="good"?"ok":"warn"}>${dg.q[0]}</span>`}</div>
+      <div>${M[sit]}山三龙：${tri.map(t=>t.blank?"空":t.name+"("+t.q[0].split(" ")[0]+")").join(" · ")}</div>
+      ${dg.blank?"":dg.el===el?html`<div class="ok">龙 ${dg.el} = 局 ${r.bu.n} ✓ 龙水同局</div>`:html`<div class="warn">龙 ${dg.el} ≠ 局 ${r.bu.n} — 出卦${dg.el==="土"?" (土 has no 局)":""}</div>`}
+      <div>${mv}</div>
+    </div>
+    <div class="card"><table><thead><tr><th>长生</th><th>双山</th><th>宜</th></tr></thead><tbody>
+      ${r.rows.map((x,i)=>html`<tr key=${i} class=${x.d===dbl(fac)?"f":x.d===dbl(mouth)?"m":""}><td>${x.n}</td><td>${DB[x.d]}</td><td>${GOOD.includes(i)?"收来":OUT.includes(i)?"去水":"—"}${x.d===dbl(fac)?html`<span class="tag" style=${{background:"var(--fac)"}}>向</span>`:""}${x.d===dbl(sit)?html`<span class="tag" style=${{background:"var(--sit)"}}>坐</span>`:""}${x.d===dbl(mouth)?html`<span class="tag" style=${{background:"var(--wat)"}}>口</span>`:""}</td></tr>`)}
+    </tbody></table>
+    <div class="leg" style=${{textAlign:"left",marginTop:8}}>Rules from your file: 局 is set by the water mouth; 阳干 chain runs clockwise (左旋), 阴干 counter-clockwise (右旋). Auto picks the chain from the facing; override with the buttons. 临官·冠带·沐浴·病·死·绝 are not for facing; water leaving at 临官/帝旺/病/死 = 杀人大黄泉. * 自生/自旺 need the matching mouth.</div></div>
+  </div>`;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(html`<${App}/>`);
+</script>
+</body>
+</html>
