@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from . import data
+from . import backtest, data
 from .analysis import Analysis, analyze
 from .notifier import Notifier, format_signal, format_status
 
@@ -95,6 +95,7 @@ class TradingAgent:
         if a.signal:
             key = f"{a.symbol}|{a.timeframe}|{a.signal.key}"
             if not self.state.seen(key):
+                self._rate(a)
                 title = f"{a.symbol} {a.timeframe}: {'Bullish' if a.signal.direction == 'BUY' else 'Bearish'} turning point"
                 self.notifier.send(title, format_signal(a))
                 self.state.mark(key, "sent")
@@ -109,6 +110,18 @@ class TradingAgent:
                 )
             if prev != a.trend:
                 self.state.mark(tkey, a.trend)
+
+    def _rate(self, a: Analysis) -> None:
+        """Set the alert's confidence from this symbol/timeframe's track record."""
+        if not self.cfg.get("signals", {}).get("track_record", True):
+            return
+        try:
+            tr = backtest.track_record(self._get(a.symbol, a.timeframe), self.cfg, a.timeframe)
+        except Exception as e:
+            print(f"[agent] track record failed for {a.symbol} {a.timeframe}: {e}")
+            return
+        a.signal.track_record = tr
+        a.signal.confidence = tr["rating"]
 
     def watch(self, interval_sec: int | None = None) -> None:
         interval = interval_sec or self.cfg.get("agent", {}).get("poll_seconds", 300)

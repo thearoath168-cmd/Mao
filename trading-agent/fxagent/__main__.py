@@ -32,7 +32,7 @@ def main(argv=None) -> None:
     b.add_argument("symbol")
     b.add_argument("-t", "--timeframe", default="1h")
     b.add_argument("--csv", help="use a local CSV instead of Yahoo")
-    b.add_argument("--max-bars", type=int, default=48, help="bars to hold before timing out")
+    b.add_argument("--max-bars", type=int, help="bars to hold before timing out (default depends on timeframe)")
     b.add_argument("--show-trades", action="store_true")
 
     sub.add_parser("test-notify", help="send a sample alert to check your Telegram/Discord/ntfy setup")
@@ -49,13 +49,17 @@ def main(argv=None) -> None:
     elif args.cmd == "analyze":
         df = data.load_csv(args.csv) if args.csv else data.get_data(args.symbol, args.timeframe)
         res = analyze(df, args.symbol.upper(), args.timeframe, cfg)
+        if res.signal and cfg.get("signals", {}).get("track_record", True):
+            tr = backtest.track_record(df, cfg, args.timeframe)
+            res.signal.track_record, res.signal.confidence = tr, tr["rating"]
         print(format_status(res))
         print("Score components (-1 bearish .. +1 bullish):", json.dumps(res.components))
         print("Indicators:", json.dumps(res.indicators))
         print(format_signal(res) if res.signal else "No turning point on the last closed candle.")
     elif args.cmd == "backtest":
         df = data.load_csv(args.csv) if args.csv else data.get_data(args.symbol, args.timeframe)
-        out = backtest.run(df, cfg, max_bars=args.max_bars)
+        out = backtest.run(df, cfg, max_bars=args.max_bars or backtest.HOLD_BARS.get(args.timeframe, 48),
+                           timeframe=args.timeframe)
         print(f"Backtest {args.symbol.upper()} {args.timeframe}: {len(df)} candles "
               f"({df.index[0]:%Y-%m-%d} → {df.index[-1]:%Y-%m-%d})")
         for k, v in out["summary"].items():
@@ -69,6 +73,8 @@ def sample_alert() -> Analysis:
     now = pd.Timestamp.now(tz="UTC").floor("h")
     sig = Signal(
         direction="BUY", confluence=5, confidence="high", time=now,
+        track_record={"signals": 186, "win_rate": 44.1, "avg_R": 0.12,
+                      "since": pd.Timestamp("2024-06-28", tz="UTC"), "rating": "high"},
         reasons=[
             "ICT: Sell-side liquidity sweep below 2,598.40 (stop hunt), closed back above",
             "ICT: Change of Character / MSS — closed above swing high 2,612.10",
