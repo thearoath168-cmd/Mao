@@ -1,0 +1,17 @@
+{
+  "name": "khmer-fortune-teller-bot",
+  "version": "1.0.0",
+  "description": "Telegram AI fortune teller: Khmer astrology, BaZi, Feng Shui, numerology, tarot, I Ching and Yam, powered by Claude",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=22.9" },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/index.js",
+    "cli": "node --env-file-if-exists=.env src/cli.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.9.0",
+    "grammy": "^1.38.0"
+  }
+}
