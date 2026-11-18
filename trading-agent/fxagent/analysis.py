@@ -34,10 +34,11 @@ class Signal:
     stop_loss: float
     take_profit_1: float
     take_profit_2: float
-    confidence: str                    # low / medium / high
+    confidence: str                    # high / medium / low from track record, or "unrated"
     time: pd.Timestamp = None
     notes: list = field(default_factory=list)      # context, not counted as confluence
     liquidity_target: float | None = None          # ICT draw on liquidity (opposite swing)
+    track_record: dict | None = None               # backtest stats for this symbol/timeframe
 
     @property
     def key(self) -> str:
@@ -161,7 +162,7 @@ def divergence(d: pd.DataFrame, i: int, lookback: int = 40, k: int = 3, recent: 
 def turning_point(d: pd.DataFrame, i: int, cfg: dict | None = None) -> Signal | None:
     """Look for a bullish or bearish reversal at bar i using indicator confluence."""
     c = (cfg or {}).get("signals", {})
-    min_conf = c.get("min_confluence", 3)
+    min_conf = c.get("min_confluence", 4)
     look = c.get("recent_bars", 3)  # how many bars back an event can count
     r = d.iloc[i]
     win = d.iloc[max(0, i - look) : i + 1]
@@ -257,6 +258,14 @@ def turning_point(d: pd.DataFrame, i: int, cfg: dict | None = None) -> Signal | 
     else:
         return None
 
+    # Trend filter: only buy above / sell below the slow EMA (EMA200 by default).
+    # On real gold data this turned losing counter-trend signals into a small edge.
+    if c.get("trend_filter", "ema200") == "ema200":
+        if direction == "BUY" and r.close < r.ema_slow:
+            return None
+        if direction == "SELL" and r.close > r.ema_slow:
+            return None
+
     # The current bar must confirm direction (close in the signal direction)
     if c.get("require_confirmation_candle", True):
         if direction == "BUY" and not r.close > r.open:
@@ -292,10 +301,10 @@ def turning_point(d: pd.DataFrame, i: int, cfg: dict | None = None) -> Signal | 
             notes.append(f"Draw on liquidity: {'buy' if sign > 0 else 'sell'}-side at {_f(lt)}")
         if ict_model[sign]:
             notes.append("✅ ICT reversal model: liquidity sweep + market structure shift")
+    # Confidence is NOT derived from the number of confirming signals: on real gold
+    # data more confluence did not mean better trades. The agent rates each alert
+    # from the measured track record instead (see backtest.track_record).
     n = len(reasons)
-    confidence = "high" if n >= min_conf + 2 else "medium" if n >= min_conf + 1 else "low"
-    if has_ict and ict_model[sign] and confidence != "high":
-        confidence = "medium" if confidence == "low" else "high"
     return Signal(
         direction=direction,
         confluence=n,
@@ -304,17 +313,28 @@ def turning_point(d: pd.DataFrame, i: int, cfg: dict | None = None) -> Signal | 
         stop_loss=entry - sign * risk,
         take_profit_1=entry + sign * risk * rr1,
         take_profit_2=entry + sign * risk * rr2,
-        confidence=confidence,
+        confidence="unrated",
         time=d.index[i],
         notes=notes,
         liquidity_target=target,
     )
 
 
+def effective_cfg(cfg: dict | None, timeframe: str | None) -> dict:
+    """Apply per-timeframe overrides, e.g. [signals.min_confluence_by_tf] "4h" = 3."""
+    cfg = dict(cfg or {})
+    sig = dict(cfg.get("signals", {}))
+    by_tf = sig.get("min_confluence_by_tf", {})
+    if timeframe in by_tf:
+        sig["min_confluence"] = by_tf[timeframe]
+    cfg["signals"] = sig
+    return cfg
+
+
 def analyze(df: pd.DataFrame, symbol: str, timeframe: str, cfg: dict | None = None,
             higher_df: pd.DataFrame | None = None) -> Analysis:
     """Full analysis of the latest bar of df."""
-    cfg = cfg or {}
+    cfg = effective_cfg(cfg, timeframe)
     d = prepare(df, cfg)
     i = len(d) - 1
     score, comp = score_row(d, i, cfg.get("weights"))
@@ -328,13 +348,15 @@ def analyze(df: pd.DataFrame, symbol: str, timeframe: str, cfg: dict | None = No
         htf_trend, _ = classify(hs, cfg.get("trend_threshold", 25))
 
     sig = turning_point(d, i, cfg)
-    if sig and cfg.get("signals", {}).get("respect_higher_tf", False) and htf_trend:
-        if (sig.direction == "BUY" and htf_trend == "BEARISH") or (sig.direction == "SELL" and htf_trend == "BULLISH"):
-            sig.confidence = "low"
-            sig.reasons.append(f"⚠ Against higher-timeframe trend ({htf_trend})")
-    elif sig and htf_trend:
-        if (sig.direction == "BUY" and htf_trend == "BULLISH") or (sig.direction == "SELL" and htf_trend == "BEARISH"):
-            sig.reasons.append(f"Aligned with higher-timeframe trend ({htf_trend})")
+    if sig and htf_trend:
+        against = (sig.direction == "BUY" and htf_trend == "BEARISH") or (sig.direction == "SELL" and htf_trend == "BULLISH")
+        aligned = (sig.direction == "BUY" and htf_trend == "BULLISH") or (sig.direction == "SELL" and htf_trend == "BEARISH")
+        if against and cfg.get("signals", {}).get("respect_higher_tf", False):
+            sig = None
+        elif against:
+            sig.notes.append(f"⚠ Against higher-timeframe trend ({htf_trend})")
+        elif aligned:
+            sig.notes.append(f"Aligned with higher-timeframe trend ({htf_trend})")
 
     ind = {
         "RSI": round(float(r.rsi), 1),

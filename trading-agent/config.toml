@@ -42,10 +42,13 @@ bb_k = 2.0
 volume_period = 20
 
 [signals]
-min_confluence = 3                  # how many independent signals must agree for a turning-point alert
+min_confluence = 4                  # how many independent signals must agree for a turning-point alert
+trend_filter = "ema200"             # "ema200" = only BUY above / SELL below the 200 EMA; "none" = allow counter-trend
+track_record = true                 # rate each alert from a backtest of this symbol/timeframe
+min_track_record = 20               # fewer past signals than this = "not rated"
 recent_bars = 3                     # an event within the last N candles still counts
 require_confirmation_candle = true  # signal candle must close in the signal direction
-respect_higher_tf = false           # true = downgrade signals that go against the higher timeframe
+respect_higher_tf = false           # true = drop signals that go against the higher timeframe (otherwise just warn)
 volume_spike = 1.5                  # x average volume
 sl_atr = 1.5                        # stop loss = 1.5 x ATR
 tp1_rr = 1.5                        # take profit 1 = 1.5R
@@ -53,6 +56,9 @@ tp2_rr = 3.0                        # take profit 2 = 3R
 pivot_k = 3
 sl_mode = "structure"               # "structure" = stop beyond swept low/high (ICT), "atr" = ATR stop
 sweep_bars = 10                     # a liquidity sweep within N candles before the MSS still counts
+
+[signals.min_confluence_by_tf]      # per-timeframe override (4h did better with 3 in the gold backtest)
+"4h" = 3
 
 [ict]                               # Inner Circle Trader concepts
 enabled = true

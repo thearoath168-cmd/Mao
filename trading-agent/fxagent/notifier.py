@@ -12,13 +12,25 @@ def _fmt(x: float) -> str:
     return f"{x:,.2f}" if abs(x) >= 100 else f"{x:.5f}"
 
 
+def _confidence_line(a: Analysis) -> str:
+    s, tr = a.signal, a.signal.track_record
+    if not tr:
+        return f"Confidence: NOT RATED  ({s.confluence} confirming signals)"
+    if tr["signals"] == 0:
+        return f"Confidence: NOT RATED (no past signals)  ({s.confluence} confirming signals)"
+    label = "NOT RATED (too few past signals)" if s.confidence == "unrated" else s.confidence.upper()
+    return (f"Confidence: {label} — past {tr['signals']} signals on {a.symbol} {a.timeframe} "
+            f"since {tr['since']:%b %Y}: {tr['win_rate']:.0f}% won, avg {tr['avg_R']:+.2f}R "
+            f"(before costs)\nConfirming signals: {s.confluence}")
+
+
 def format_signal(a: Analysis) -> str:
     s = a.signal
     arrow = "🟢 BULLISH TURN — BUY" if s.direction == "BUY" else "🔴 BEARISH TURN — SELL"
     lines = [
         f"{arrow}  {a.symbol} ({a.timeframe})",
         f"Time: {s.time:%Y-%m-%d %H:%M} UTC   Price: {_fmt(s.entry)}",
-        f"Confidence: {s.confidence.upper()}  ({s.confluence} confirming signals)",
+        _confidence_line(a),
         f"Trend score: {a.score:+.0f} ({a.trend.lower()}, {a.strength})"
         + (f"   Higher TF: {a.higher_tf_trend}" if a.higher_tf_trend else ""),
         "",

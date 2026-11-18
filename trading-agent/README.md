@@ -54,7 +54,8 @@ The agent also checks the **higher timeframe** (for example 4h when you trade 1h
 whether a signal goes with or against it.
 
 ### How turning points are detected
-A turning point needs **confluence**: at least 3 of these signals on the latest closed candles.
+A turning point needs **confluence**: at least 4 of these signals on the latest closed candles
+(3 on the 4h chart).
 
 - RSI leaves oversold or overbought
 - MACD crossover
@@ -65,9 +66,23 @@ A turning point needs **confluence**: at least 3 of these signals on the latest 
 - Volume spike
 - ICT: CHoCH/MSS, liquidity sweep, FVG rejection, Order Block reaction
 
-The signal candle must also close in the signal's direction. Confidence is rated **low**,
-**medium**, or **high** by how many signals agree. The agent only uses **closed** candles,
-so signals do not repaint.
+The signal candle must also close in the signal's direction, and a **trend filter** only
+allows BUY signals above the 200 EMA and SELL signals below it (`trend_filter = "none"` turns
+it off). The agent only uses **closed** candles, so signals do not repaint.
+
+**Confidence comes from the track record.** When an alert fires, the agent backtests the
+current settings on that symbol and timeframe and puts the result in the alert:
+```
+Confidence: HIGH — past 186 signals on XAUUSD 1h since Jun 2024: 44% won, avg +0.12R (before costs)
+```
+- **HIGH** = average of +0.10R or better per trade
+- **MEDIUM** = profitable but below +0.10R
+- **LOW** = losing
+- **NOT RATED** = fewer than 20 past signals
+
+R is profit or loss in units of the risk taken (the distance to the stop loss). The number of
+confirming signals is still shown, but it doesn't set the confidence: on real gold data, more
+confirming signals did not mean better trades.
 
 ---
 
@@ -141,8 +156,27 @@ computer running. You can also start a scan by hand from the **Actions** tab.
 ## Tuning
 Everything is in `config.toml`: symbols, timeframes, indicator periods, score weights,
 `min_confluence` (raise it for fewer, stronger alerts), stop-loss and take-profit multiples,
-and the higher-timeframe filter. **After changing settings, run `backtest` again** to check
-that the change helps on real data.
+the trend filter, and the higher-timeframe filter. **After changing settings, run `backtest`
+again** to check that the change helps on real data.
+
+### Backtest results behind the defaults
+Real Yahoo Finance data, June 2024 to November 2026 (daily: 2016 to 2026), before spread and
+commission. Old = 3 confirming signals and no trend filter. New = the current defaults.
+
+| Market | Old: signals / avg R | New: signals / avg R |
+|---|---|---|
+| XAUUSD 1h | 553 / −0.04R | 186 / **+0.12R** (44% won) |
+| XAUUSD 4h | 159 / +0.01R | 94 / **+0.15R** (45% won) |
+| XAUUSD 1d | 110 / −0.16R | 28 / +0.17R (small sample) |
+| EURUSD 1h | 624 / +0.03R | 195 / **+0.12R** |
+| GBPUSD 1h | 679 / −0.05R | 194 / **+0.09R** |
+| USDJPY 1h | 612 / +0.02R | 175 / +0.01R |
+| EURUSD / GBPUSD / USDJPY 4h | +0.06 / +0.05 / +0.09R | −0.13 / +0.04 / −0.02R ⚠ |
+
+The settings were tuned on gold. On 1h they also helped EURUSD and GBPUSD, which they were not
+tuned on. On 4h they made the forex pairs worse, so for 4h forex consider
+`trend_filter = "none"` and check with `backtest`. These edges are small. They come from a
+short period in which gold mostly rose, and live results are likely to be worse.
 
 ## Tests
 ```bash

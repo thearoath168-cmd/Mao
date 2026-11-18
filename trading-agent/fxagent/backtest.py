@@ -3,11 +3,15 @@ from __future__ import annotations
 
 import pandas as pd
 
-from .analysis import prepare, turning_point
+from .analysis import effective_cfg, prepare, turning_point
+
+# how many candles a backtest trade may stay open, per timeframe
+HOLD_BARS = {"5m": 48, "15m": 48, "30m": 48, "1h": 48, "4h": 30, "1d": 20, "1wk": 12}
 
 
-def run(df: pd.DataFrame, cfg: dict | None = None, max_bars: int = 48, warmup: int = 210) -> dict:
-    cfg = cfg or {}
+def run(df: pd.DataFrame, cfg: dict | None = None, max_bars: int = 48, warmup: int = 210,
+        timeframe: str | None = None) -> dict:
+    cfg = effective_cfg(cfg, timeframe)
     d = prepare(df, cfg)
     trades = []
     i = warmup
@@ -51,7 +55,6 @@ def run(df: pd.DataFrame, cfg: dict | None = None, max_bars: int = 48, warmup: i
             {
                 "time": sig.time,
                 "direction": sig.direction,
-                "confidence": sig.confidence,
                 "confluence": sig.confluence,
                 "entry": sig.entry,
                 "outcome": outcome,
@@ -71,6 +74,32 @@ def run(df: pd.DataFrame, cfg: dict | None = None, max_bars: int = 48, warmup: i
         "stopped_%": round(100 * (t["outcome"] == "stop").mean(), 1),
         "avg_R": round(t["R"].mean(), 3),
         "total_R": round(t["R"].sum(), 2),
-        "by_confidence": t.groupby("confidence")["R"].agg(["count", "mean"]).round(2).to_dict("index"),
+        "by_direction": t.groupby("direction")["R"].agg(["count", "mean"]).round(2).to_dict("index"),
     }
     return {"trades": t, "summary": summary}
+
+
+def rate(n: int, avg_r: float, min_signals: int = 20) -> str:
+    """Confidence from a track record: is this setup profitable on this market?"""
+    if n < min_signals:
+        return "unrated"
+    return "high" if avg_r >= 0.10 else "medium" if avg_r > 0 else "low"
+
+
+def track_record(df: pd.DataFrame, cfg: dict | None, timeframe: str) -> dict:
+    """Backtest the current settings on df and summarise for an alert.
+
+    Stats are before spread/commission and measured on past data, so treat them
+    as an optimistic estimate.
+    """
+    out = run(df, cfg, max_bars=HOLD_BARS.get(timeframe, 48), timeframe=timeframe)
+    s = out["summary"]
+    n = s.get("signals", 0)
+    avg = s.get("avg_R", 0.0) if n else 0.0
+    return {
+        "signals": n,
+        "win_rate": s.get("win_rate_%", 0.0) if n else 0.0,
+        "avg_R": avg,
+        "since": df.index[0],
+        "rating": rate(n, avg, (cfg or {}).get("signals", {}).get("min_track_record", 20)),
+    }

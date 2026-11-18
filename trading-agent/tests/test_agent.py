@@ -5,6 +5,10 @@ import pytest
 from fxagent import analysis, backtest, indicators, patterns
 from fxagent.agent import TradingAgent
 
+# Raw reversal detector (no trend filter, 3 confirmations), used by tests that
+# check bottom/top detection itself. The shipped defaults filter these out.
+DETECTOR = {"signals": {"min_confluence": 3, "trend_filter": "none"}}
+
 
 def make_df(closes, vol=True, seed=0):
     rng = np.random.default_rng(seed)
@@ -69,7 +73,7 @@ def test_turning_point_detected_at_v_bottom():
     # long decline followed by a sharp recovery -> expect a BUY turn near the bottom
     closes = np.r_[trend_series(300, 200, -0.25, 0.4), trend_series(80, 125, 0.6, 0.4, seed=3)]
     d = analysis.prepare(make_df(closes))
-    sigs = [analysis.turning_point(d, i) for i in range(290, 340)]
+    sigs = [analysis.turning_point(d, i, DETECTOR) for i in range(290, 340)]
     sigs = [s for s in sigs if s]
     assert sigs, "expected a turning point near the reversal"
     assert sigs[0].direction == "BUY"
@@ -86,8 +90,8 @@ def test_no_lookahead_in_signals(kind):
     full = analysis.prepare(df)
     for i in range(220, len(df) - 1, 3):
         part = analysis.prepare(df.iloc[: i + 1])
-        a = analysis.turning_point(full, i)
-        b = analysis.turning_point(part, i)
+        a = analysis.turning_point(full, i, DETECTOR)
+        b = analysis.turning_point(part, i, DETECTOR)
         assert (a is None) == (b is None)
         if a:
             assert a.direction == b.direction and a.reasons == b.reasons and a.stop_loss == b.stop_loss
@@ -99,7 +103,7 @@ def test_backtest_runs():
         trend_series(300, 140, 0.2, 0.6, seed=5),
         trend_series(300, 200, -0.2, 0.6, seed=7),
     ]
-    out = backtest.run(make_df(closes))
+    out = backtest.run(make_df(closes), DETECTOR)
     assert out["summary"]["signals"] >= 1
     assert set(out["trades"]["outcome"]) <= {"tp1", "tp2", "stop", "timeout"}
 
@@ -110,7 +114,7 @@ def test_agent_scan_alerts_once(monkeypatch, tmp_path, capsys):
     from fxagent import data
     monkeypatch.setattr(data, "get_data", lambda s, tf, **k: df)
     agent = TradingAgent({"agent": {"symbols": ["XAUUSD"], "timeframes": ["1h"],
-                                    "state_file": str(tmp_path / "s.json")}})
+                                    "state_file": str(tmp_path / "s.json")}, **DETECTOR})
     sent = []
     monkeypatch.setattr(agent.notifier, "send", lambda t, x: sent.append(t))
     # scan bar by bar; each signal must be sent only once
@@ -185,7 +189,7 @@ def test_ict_no_lookahead():
 def test_signal_includes_ict_reasons():
     closes = wave_reversal()
     d = analysis.prepare(make_df(closes))
-    sigs = [s for s in (analysis.turning_point(d, i) for i in range(250, 330)) if s]
+    sigs = [s for s in (analysis.turning_point(d, i, DETECTOR) for i in range(250, 330)) if s]
     assert any(any(r.startswith("ICT") for r in s.reasons) for s in sigs)
 
 
@@ -232,3 +236,69 @@ def test_test_notify_telegram_bad_chat_hides_token(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "chat not found" in out and "TELEGRAM_CHAT_ID" in out
     assert "SECRET" not in out
+
+
+# ---------------- trend filter / confidence ----------------
+from fxagent.notifier import format_signal
+
+
+def _v_bottom():
+    return np.r_[trend_series(300, 200, -0.25, 0.4), trend_series(80, 125, 0.6, 0.4, seed=3)]
+
+
+def test_trend_filter_blocks_counter_trend_buys():
+    d = analysis.prepare(make_df(_v_bottom()))
+    filt = {"signals": {"min_confluence": 3, "trend_filter": "ema200"}}
+    for i in range(290, 340):
+        s = analysis.turning_point(d, i, filt)
+        if s is not None:
+            r = d.iloc[i]
+            assert (s.direction == "BUY") == (r.close > r.ema_slow)
+    # without the filter the same bars do produce a BUY below the EMA200
+    raw = [analysis.turning_point(d, i, DETECTOR) for i in range(290, 340)]
+    assert any(s and s.direction == "BUY" and d.loc[s.time, "close"] < d.loc[s.time, "ema_slow"] for s in raw)
+
+
+def test_min_confluence_by_timeframe():
+    cfg = {"signals": {"min_confluence": 4, "min_confluence_by_tf": {"4h": 3}}}
+    assert analysis.effective_cfg(cfg, "4h")["signals"]["min_confluence"] == 3
+    assert analysis.effective_cfg(cfg, "1h")["signals"]["min_confluence"] == 4
+    assert cfg["signals"]["min_confluence"] == 4      # original not mutated
+
+
+def test_rating_thresholds():
+    assert backtest.rate(10, 0.5) == "unrated"
+    assert backtest.rate(50, 0.15) == "high"
+    assert backtest.rate(50, 0.03) == "medium"
+    assert backtest.rate(50, -0.10) == "low"
+
+
+def test_track_record_and_alert_text():
+    df = make_df(np.r_[trend_series(300, 200, -0.2, 0.6), trend_series(300, 140, 0.2, 0.6, seed=5),
+                       trend_series(300, 200, -0.2, 0.6, seed=7)])
+    tr = backtest.track_record(df, DETECTOR, "1h")
+    assert tr["signals"] >= 1 and tr["rating"] in {"unrated", "high", "medium", "low"}
+    d = analysis.prepare(make_df(_v_bottom()))
+    s = next(s for s in (analysis.turning_point(d, i, DETECTOR) for i in range(290, 340)) if s)
+    assert s.confidence == "unrated"
+    a = analysis.Analysis("XAUUSD", "1h", s.time, s.entry, 30, "BULLISH", "moderate",
+                          indicators={"RSI": 50, "CCI": 0, "ADX": 20}, signal=s)
+    assert "NOT RATED" in format_signal(a)
+    s.track_record = {"signals": 120, "win_rate": 45.0, "avg_R": 0.12, "since": df.index[0], "rating": "high"}
+    s.confidence = "high"
+    txt = format_signal(a)
+    assert "HIGH" in txt and "past 120 signals" in txt and "+0.12R" in txt
+
+
+def test_agent_rates_alerts_from_track_record(monkeypatch, tmp_path):
+    df = make_df(_v_bottom())
+    from fxagent import data
+    agent = TradingAgent({"agent": {"symbols": ["XAUUSD"], "timeframes": ["1h"],
+                                    "state_file": str(tmp_path / "s.json"), "notify_trend_change": False},
+                          **DETECTOR})
+    texts = []
+    monkeypatch.setattr(agent.notifier, "send", lambda t, x: texts.append(x))
+    for end in range(300, 331):
+        monkeypatch.setattr(data, "get_data", lambda s, tf, e=end, **k: df.iloc[:e])
+        agent.scan()
+    assert texts and all("Confidence:" in t and "past" in t for t in texts)
