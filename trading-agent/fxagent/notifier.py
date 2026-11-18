@@ -72,21 +72,43 @@ class Notifier:
             ch.append("ntfy")
         return ch
 
-    def send(self, title: str, text: str) -> None:
+    def send(self, title: str, text: str) -> dict[str, str | None]:
+        """Send to every configured channel. Returns {channel: None if ok else error}."""
         print("\n" + "=" * 60 + "\n" + text + "\n" + "=" * 60, flush=True)
+        results: dict[str, str | None] = {}
         for name, fn in (("telegram", self._telegram), ("discord", self._discord), ("ntfy", self._ntfy)):
             if name in self.channels():
                 try:
                     fn(title, text)
+                    results[name] = None
                 except Exception as e:
+                    results[name] = str(e)
                     print(f"[notifier] {name} failed: {e}")
+        return results
 
     def _telegram(self, title: str, text: str) -> None:
-        requests.post(
-            f"https://api.telegram.org/bot{self.telegram_token}/sendMessage",
-            json={"chat_id": self.telegram_chat, "text": text},
-            timeout=15,
-        ).raise_for_status()
+        try:
+            r = requests.post(
+                f"https://api.telegram.org/bot{self.telegram_token}/sendMessage",
+                json={"chat_id": self.telegram_chat, "text": text},
+                timeout=15,
+            )
+        except requests.RequestException as e:
+            # never echo the URL: it contains the bot token
+            raise RuntimeError(f"network error contacting Telegram ({type(e).__name__})") from None
+        if not r.ok:
+            try:
+                desc = r.json().get("description", r.reason)
+            except ValueError:
+                desc = r.reason
+            hints = {
+                401: "check TELEGRAM_BOT_TOKEN (copy it again from @BotFather, no spaces)",
+                400: "check TELEGRAM_CHAT_ID, and press Start in the chat with your bot",
+                403: "the bot was blocked or removed from the chat; unblock it / add it back",
+                404: "check TELEGRAM_BOT_TOKEN (copy it again from @BotFather, no spaces)",
+            }
+            hint = hints.get(r.status_code, "")
+            raise RuntimeError(f"Telegram {r.status_code}: {desc}" + (f" — {hint}" if hint else ""))
 
     def _discord(self, title: str, text: str) -> None:
         requests.post(self.discord_url, json={"content": text[:1900]}, timeout=15).raise_for_status()

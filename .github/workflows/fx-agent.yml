@@ -9,6 +9,11 @@ on:
   schedule:
     - cron: "*/15 * * * 0-5"   # Sun–Fri (forex market hours, UTC)
   workflow_dispatch:
+    inputs:
+      test_notify:
+        description: "Only send a test alert (check Telegram/Discord/ntfy setup)"
+        type: boolean
+        default: false
 
 jobs:
   scan:
@@ -30,7 +35,12 @@ jobs:
           path: trading-agent/.agent_state.json
           key: fx-agent-state-${{ github.run_id }}
           restore-keys: fx-agent-state-
-      - run: python -m fxagent scan
+      - run: |
+          if [ "${{ inputs.test_notify }}" = "true" ]; then
+            python -m fxagent test-notify
+          else
+            python -m fxagent scan
+          fi
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

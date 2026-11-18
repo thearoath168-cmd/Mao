@@ -187,3 +187,48 @@ def test_signal_includes_ict_reasons():
     d = analysis.prepare(make_df(closes))
     sigs = [s for s in (analysis.turning_point(d, i) for i in range(250, 330)) if s]
     assert any(any(r.startswith("ICT") for r in s.reasons) for s in sigs)
+
+
+# ---------------- test-notify ----------------
+from fxagent.__main__ import run_test_notify
+
+
+def _env(monkeypatch, **kv):
+    for k in ("TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "DISCORD_WEBHOOK_URL", "NTFY_TOPIC"):
+        monkeypatch.delenv(k, raising=False)
+    for k, v in kv.items():
+        monkeypatch.setenv(k, v)
+
+
+class _Resp:
+    def __init__(self, code, body):
+        self.status_code, self._body, self.ok, self.reason = code, body, code < 400, "x"
+
+    def json(self):
+        return self._body
+
+
+def test_test_notify_without_channels(monkeypatch, capsys):
+    _env(monkeypatch)
+    assert run_test_notify({}) == 1
+    assert "No notification channel" in capsys.readouterr().out
+
+
+def test_test_notify_telegram_ok(monkeypatch, capsys):
+    _env(monkeypatch, TELEGRAM_BOT_TOKEN="123:SECRET", TELEGRAM_CHAT_ID="42")
+    sent = {}
+    monkeypatch.setattr("fxagent.notifier.requests.post",
+                        lambda url, json=None, **k: sent.update(json) or _Resp(200, {"ok": True}))
+    assert run_test_notify({}) == 0
+    assert sent["chat_id"] == "42" and "TEST ALERT" in sent["text"] and "XAUUSD" in sent["text"]
+    assert "✅ telegram: sent" in capsys.readouterr().out
+
+
+def test_test_notify_telegram_bad_chat_hides_token(monkeypatch, capsys):
+    _env(monkeypatch, TELEGRAM_BOT_TOKEN="123:SECRET", TELEGRAM_CHAT_ID="999")
+    monkeypatch.setattr("fxagent.notifier.requests.post",
+                        lambda *a, **k: _Resp(400, {"ok": False, "description": "Bad Request: chat not found"}))
+    assert run_test_notify({}) == 1
+    out = capsys.readouterr().out
+    assert "chat not found" in out and "TELEGRAM_CHAT_ID" in out
+    assert "SECRET" not in out

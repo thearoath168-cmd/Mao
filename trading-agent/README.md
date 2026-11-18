@@ -81,6 +81,7 @@ python -m fxagent scan                  # one scan of all symbols in config.toml
 python -m fxagent analyze XAUUSD -t 1h  # detailed breakdown of one symbol
 python -m fxagent watch                 # run forever, alert on turning points
 python -m fxagent backtest XAUUSD -t 1h --show-trades
+python -m fxagent test-notify           # send a sample alert to check notifications
 ```
 
 Example output:
@@ -121,6 +122,11 @@ Set one or more of these environment variables. If none are set, alerts print to
 | **ntfy (easiest, phone push)** | Install the *ntfy* app (iOS/Android) and subscribe to a long random topic name. Then set `NTFY_TOPIC=that-name` |
 | **Telegram** | Create a bot with @BotFather → `TELEGRAM_BOT_TOKEN`. Send the bot a message, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` to find `TELEGRAM_CHAT_ID` |
 | **Discord** | Channel settings → Integrations → Webhook → `DISCORD_WEBHOOK_URL` |
+
+**Check your setup:** `python -m fxagent test-notify` sends a sample alert to every configured
+channel and shows ✅ or ❌ for each one, with a hint when something is wrong (for example a bad
+token or chat ID). On GitHub: **Actions → FX & Gold trend agent → Run workflow** and tick
+*Only send a test alert*.
 
 You also get an alert when the overall trend flips (set `notify_trend_change` in `config.toml`).
 
