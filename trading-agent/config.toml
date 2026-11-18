@@ -1,0 +1,65 @@
+# fxagent configuration
+
+# Score above +threshold = BULLISH, below -threshold = BEARISH (range -100..+100)
+trend_threshold = 25
+
+[agent]
+symbols = ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY"]
+timeframes = ["1h"]                 # any of: 5m 15m 30m 1h 4h 1d
+poll_seconds = 300                  # for `watch` mode
+notify_trend_change = true          # also alert when overall trend flips
+state_file = ".agent_state.json"
+
+[agent.higher_timeframe]            # trend filter timeframe for each timeframe
+"15m" = "1h"
+"1h" = "4h"
+"4h" = "1d"
+"1d" = "1wk"
+
+[weights]                           # how much each indicator counts in the trend score
+ema_trend = 25
+macd = 20
+rsi = 15
+cci = 10
+adx_di = 15
+volume = 10
+candles = 5
+ict = 20                            # ICT market structure + FVG bias
+
+[indicators]
+ema_fast = 20
+ema_mid = 50
+ema_slow = 200
+rsi_period = 14
+macd_fast = 12
+macd_slow = 26
+macd_signal = 9
+atr_period = 14
+cci_period = 20
+adx_period = 14
+bb_period = 20
+bb_k = 2.0
+volume_period = 20
+
+[signals]
+min_confluence = 3                  # how many independent signals must agree for a turning-point alert
+recent_bars = 3                     # an event within the last N candles still counts
+require_confirmation_candle = true  # signal candle must close in the signal direction
+respect_higher_tf = false           # true = downgrade signals that go against the higher timeframe
+volume_spike = 1.5                  # x average volume
+sl_atr = 1.5                        # stop loss = 1.5 x ATR
+tp1_rr = 1.5                        # take profit 1 = 1.5R
+tp2_rr = 3.0                        # take profit 2 = 3R
+pivot_k = 3
+sl_mode = "structure"               # "structure" = stop beyond swept low/high (ICT), "atr" = ATR stop
+sweep_bars = 10                     # a liquidity sweep within N candles before the MSS still counts
+
+[ict]                               # Inner Circle Trader concepts
+enabled = true
+swing_k = 3                         # candles each side to confirm a swing high/low
+min_fvg_atr = 0.1                   # ignore fair value gaps smaller than 0.1 x ATR
+
+[notify]
+# Prefer environment variables for secrets:
+#   TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, DISCORD_WEBHOOK_URL, NTFY_TOPIC
+# ntfy_topic = "pick-a-long-random-topic-name"
