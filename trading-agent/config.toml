@@ -24,6 +24,7 @@ cci = 10
 adx_di = 15
 volume = 10
 candles = 5
+ict = 20                            # ICT market structure + FVG bias
 
 [indicators]
 ema_fast = 20
@@ -50,6 +51,13 @@ sl_atr = 1.5                        # stop loss = 1.5 x ATR
 tp1_rr = 1.5                        # take profit 1 = 1.5R
 tp2_rr = 3.0                        # take profit 2 = 3R
 pivot_k = 3
+sl_mode = "structure"               # "structure" = stop beyond swept low/high (ICT), "atr" = ATR stop
+sweep_bars = 10                     # a liquidity sweep within N candles before the MSS still counts
+
+[ict]                               # Inner Circle Trader concepts
+enabled = true
+swing_k = 3                         # candles each side to confirm a swing high/low
+min_fvg_atr = 0.1                   # ignore fair value gaps smaller than 0.1 x ATR
 
 [notify]
 # Prefer environment variables for secrets:

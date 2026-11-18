@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 
-from . import indicators, patterns
+from . import ict, indicators, patterns
 
 
 @dataclass
@@ -36,10 +36,16 @@ class Signal:
     take_profit_2: float
     confidence: str                    # low / medium / high
     time: pd.Timestamp = None
+    notes: list = field(default_factory=list)      # context, not counted as confluence
+    liquidity_target: float | None = None          # ICT draw on liquidity (opposite swing)
 
     @property
     def key(self) -> str:
         return f"{self.direction}@{self.time.isoformat()}"
+
+
+def _f(x: float) -> str:
+    return f"{x:,.2f}" if abs(x) >= 100 else f"{x:.5f}"
 
 
 def _clip(x: float, lo: float = -1.0, hi: float = 1.0) -> float:
@@ -56,12 +62,17 @@ DEFAULT_WEIGHTS = {
     "adx_di": 15,
     "volume": 10,
     "candles": 5,
+    "ict": 20,
 }
 
 
 def prepare(df: pd.DataFrame, cfg: dict | None = None) -> pd.DataFrame:
     """Add all indicators + candlestick patterns."""
-    out = indicators.add_all(df, (cfg or {}).get("indicators"))
+    cfg = cfg or {}
+    out = indicators.add_all(df, cfg.get("indicators"))
+    ic = cfg.get("ict", {})
+    if ic.get("enabled", True):
+        out = out.join(ict.compute(out, k=ic.get("swing_k", 3), min_fvg_atr=ic.get("min_fvg_atr", 0.1)))
     return out.join(patterns.detect(out))
 
 
@@ -98,6 +109,9 @@ def score_row(d: pd.DataFrame, i: int, weights: dict | None = None) -> tuple[flo
     # 7. Candlestick patterns on this bar
     cs = r.engulfing + r.star3 + 0.5 * r.hammer_star
     comp["candles"] = _clip(cs)
+    # 8. ICT: market structure direction + bias of the latest unfilled FVG
+    if "ms_trend" in d:
+        comp["ict"] = _clip(0.7 * r.ms_trend + 0.3 * r.fvg_bias)
 
     total_w = sum(w[k] for k, v in comp.items() if v is not None)
     score = sum(w[k] * v for k, v in comp.items() if v is not None) / total_w * 100
@@ -208,6 +222,34 @@ def turning_point(d: pd.DataFrame, i: int, cfg: dict | None = None) -> Signal | 
         elif r.close < r.open:
             bear.append(f"Volume spike ({r.vol_ratio:.1f}x avg) on bearish candle")
 
+    # ICT turning-point evidence
+    has_ict = "ms_trend" in d
+    ict_model = {1: False, -1: False}
+    if has_ict:
+        if (win["choch"] > 0).any():
+            lvl = win.loc[win["choch"] > 0, "break_level"].iloc[-1]
+            bull.append(f"ICT: Change of Character / MSS — closed above swing high {_f(lvl)}")
+        if (win["choch"] < 0).any():
+            lvl = win.loc[win["choch"] < 0, "break_level"].iloc[-1]
+            bear.append(f"ICT: Change of Character / MSS — closed below swing low {_f(lvl)}")
+        swl = d.iloc[max(0, i - c.get("sweep_bars", 10)) : i + 1]   # sweep may precede the MSS
+        if (swl["sweep"] > 0).any():
+            lvl = swl.loc[swl["sweep"] > 0, "sweep_level"].iloc[-1]
+            bull.append(f"ICT: Sell-side liquidity sweep below {_f(lvl)} (stop hunt), closed back above")
+            ict_model[1] = (win["choch"] > 0).any()
+        if (swl["sweep"] < 0).any():
+            lvl = swl.loc[swl["sweep"] < 0, "sweep_level"].iloc[-1]
+            bear.append(f"ICT: Buy-side liquidity sweep above {_f(lvl)} (stop hunt), closed back below")
+            ict_model[-1] = (win["choch"] < 0).any()
+        if (win["fvg_react"] > 0).any():
+            bull.append("ICT: Price rejected a bullish Fair Value Gap")
+        if (win["fvg_react"] < 0).any():
+            bear.append("ICT: Price rejected a bearish Fair Value Gap")
+        if (win["ob_react"] > 0).any():
+            bull.append("ICT: Reaction from a bullish Order Block")
+        if (win["ob_react"] < 0).any():
+            bear.append("ICT: Reaction from a bearish Order Block")
+
     if len(bull) >= min_conf and len(bull) > len(bear):
         direction, reasons = "BUY", bull
     elif len(bear) >= min_conf and len(bear) > len(bull):
@@ -226,10 +268,34 @@ def turning_point(d: pd.DataFrame, i: int, cfg: dict | None = None) -> Signal | 
     sl_mult = c.get("sl_atr", 1.5)
     rr1, rr2 = c.get("tp1_rr", 1.5), c.get("tp2_rr", 3.0)
     entry = float(r.close)
-    risk = sl_mult * a
     sign = 1 if direction == "BUY" else -1
+    risk = sl_mult * a
+    notes, target = [], None
+    if has_ict:
+        # ICT stop: just beyond the swept / reversal extreme, if it is a sane distance
+        if c.get("sl_mode", "structure") == "structure":
+            ext = d["low"].iloc[max(0, i - c.get("sweep_bars", 10)) : i + 1].min() if sign > 0 \
+                else d["high"].iloc[max(0, i - c.get("sweep_bars", 10)) : i + 1].max()
+            srisk = abs(entry - ext) + 0.2 * a
+            if 0.5 * a <= srisk <= 3 * a:
+                risk = srisk
+        pos = r.pd_pos
+        zone = ict.pd_label(pos)
+        if zone != "n/a":
+            good = (sign > 0 and pos < 0.5) or (sign < 0 and pos > 0.5)
+            notes.append(f"ICT {zone} zone — " + ("good location" if good else "⚠ poor location (buying in premium / selling in discount)"))
+        if r.killzone:
+            notes.append(f"Inside {r.killzone} kill zone")
+        lt = r.swing_high if sign > 0 else r.swing_low
+        if not np.isnan(lt) and (lt - entry) * sign > 0:
+            target = float(lt)
+            notes.append(f"Draw on liquidity: {'buy' if sign > 0 else 'sell'}-side at {_f(lt)}")
+        if ict_model[sign]:
+            notes.append("✅ ICT reversal model: liquidity sweep + market structure shift")
     n = len(reasons)
     confidence = "high" if n >= min_conf + 2 else "medium" if n >= min_conf + 1 else "low"
+    if has_ict and ict_model[sign] and confidence != "high":
+        confidence = "medium" if confidence == "low" else "high"
     return Signal(
         direction=direction,
         confluence=n,
@@ -240,6 +306,8 @@ def turning_point(d: pd.DataFrame, i: int, cfg: dict | None = None) -> Signal | 
         take_profit_2=entry + sign * risk * rr2,
         confidence=confidence,
         time=d.index[i],
+        notes=notes,
+        liquidity_target=target,
     )
 
 
@@ -280,6 +348,13 @@ def analyze(df: pd.DataFrame, symbol: str, timeframe: str, cfg: dict | None = No
         "EMA200": round(float(r.ema_slow), 5),
         "Vol_ratio": None if np.isnan(r.vol_ratio) else round(float(r.vol_ratio), 2),
     }
+    if "ms_trend" in d:
+        ind["Structure"] = {1: "Bullish", -1: "Bearish"}.get(int(r.ms_trend), "Unclear")
+        ind["PD_zone"] = ict.pd_label(r.pd_pos)
+        ind["Killzone"] = r.killzone or "-"
+        ind["ICT_events"] = [lbl for col, lbl in (("choch", "CHoCH"), ("bos", "BOS"), ("sweep", "Sweep"),
+                                                  ("fvg_new", "New FVG"), ("fvg_react", "FVG tap"), ("ob_react", "OB tap"))
+                             if r[col] != 0]
     return Analysis(
         symbol=symbol,
         timeframe=timeframe,

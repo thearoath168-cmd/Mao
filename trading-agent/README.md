@@ -26,6 +26,23 @@ An agent that watches **gold (XAUUSD)** and **forex pairs** and does three thing
 | **Volume / OBV** | Volume spikes confirming a move (gold futures only; spot FX has no volume) |
 | **EMA 20/50/200** | Trend structure and EMA crossovers |
 | **Bollinger Bands** | Context: is a reversal candle at an extreme? |
+| **ICT (Inner Circle Trader)** | Market structure (BOS, CHoCH/MSS), liquidity sweeps, Fair Value Gaps, Order Blocks, Premium/Discount & OTE, Kill Zones |
+
+### ICT concepts in detail
+| Concept | How the agent uses it |
+|---|---|
+| **Swing highs / lows** | Confirmed after 3 candles on each side (`swing_k`); together they form the dealing range |
+| **BOS (Break of Structure)** | A candle closes beyond the last swing in the trend direction. Counts toward the trend score as continuation |
+| **CHoCH / MSS** | The first close beyond a swing *against* the current structure. A **turning-point signal** |
+| **Liquidity sweep** | A wick takes out old lows (sell-side) or highs (buy-side), then the candle closes back inside, like a stop hunt. A **turning-point signal** |
+| **Fair Value Gap** | A 3-candle imbalance. When price returns to the gap and rejects it, that is a signal. The latest unfilled gap also feeds the trend bias |
+| **Order Block** | The last opposite-colour candle before a structure break. When price returns to it and rejects it, that is a signal |
+| **Premium / Discount, OTE** | Where price sits in the dealing range. Alerts say whether a buy is in discount (good location) or premium (poor location) |
+| **Kill Zones** | London 02:00–05:00, NY AM 07:00–10:00, NY PM 13:30–16:00 (New York time), shown on alerts |
+| **ICT reversal model** | A liquidity sweep followed by a market structure shift. This raises the alert's confidence |
+
+When ICT is on (`sl_mode = "structure"`), the stop loss goes just beyond the swept low or high,
+and the alert shows the **draw on liquidity**: the opposite swing that price is likely to target.
 
 ### How the trend score works
 Each indicator gives a vote from -1 (bearish) to +1 (bullish). The votes are weighted
@@ -46,6 +63,7 @@ A turning point needs **confluence**: at least 3 of these signals on the latest 
 - Reversal candle at a Bollinger band or RSI extreme
 - EMA20/50 cross
 - Volume spike
+- ICT: CHoCH/MSS, liquidity sweep, FVG rejection, Order Block reaction
 
 The signal candle must also close in the signal's direction. Confidence is rated **low**,
 **medium**, or **high** by how many signals agree. The agent only uses **closed** candles,

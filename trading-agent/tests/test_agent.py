@@ -77,17 +77,20 @@ def test_turning_point_detected_at_v_bottom():
     assert s.stop_loss < s.entry < s.take_profit_1 < s.take_profit_2
 
 
-def test_no_lookahead_in_signals():
+@pytest.mark.parametrize("kind", ["smooth", "wave"])
+def test_no_lookahead_in_signals(kind):
     closes = np.r_[trend_series(300, 200, -0.25, 0.4), trend_series(80, 125, 0.6, 0.4, seed=3)]
+    if kind == "wave":
+        closes = wave_reversal()
     df = make_df(closes)
     full = analysis.prepare(df)
-    for i in range(280, 370, 7):
+    for i in range(220, len(df) - 1, 3):
         part = analysis.prepare(df.iloc[: i + 1])
         a = analysis.turning_point(full, i)
         b = analysis.turning_point(part, i)
         assert (a is None) == (b is None)
         if a:
-            assert a.direction == b.direction and a.reasons == b.reasons
+            assert a.direction == b.direction and a.reasons == b.reasons and a.stop_loss == b.stop_loss
 
 
 def test_backtest_runs():
@@ -119,3 +122,68 @@ def test_agent_scan_alerts_once(monkeypatch, tmp_path, capsys):
         assert len(sent) == before
     turn_alerts = [t for t in sent if "turning point" in t]
     assert any("Bullish" in t for t in turn_alerts)
+
+
+# ---------------- ICT ----------------
+from fxagent import ict
+
+
+def wave_reversal():
+    # zig-zag decline (lower highs/lows), a stop-hunt low, then zig-zag rally
+    t = np.arange(260)
+    down = 200 - 0.2 * t + 3 * np.sin(t / 4)
+    t2 = np.arange(120)
+    up = down[-1] + 0.35 * t2 + 3 * np.sin(t2 / 4 + np.pi)
+    return np.r_[down, up]
+
+
+def _bars(rows):
+    idx = pd.date_range("2025-01-01", periods=len(rows), freq="h", tz="UTC")
+    df = pd.DataFrame(rows, columns=["open", "high", "low", "close"], index=idx)
+    df["volume"] = 0.0
+    df["atr"] = 1.0
+    return df
+
+
+def test_fvg_bullish_detected():
+    df = _bars([[10, 10.5, 9.8, 10.2], [10.2, 12, 10.1, 11.9], [11.9, 12.5, 11.0, 12.3]])
+    out = ict.compute(df, k=1)
+    assert out["fvg_new"].iloc[2] == 1   # low[2]=11.0 > high[0]=10.5
+
+
+def test_choch_on_reversal():
+    out = analysis.prepare(make_df(wave_reversal()))
+    assert (out["ms_trend"].iloc[150:255] == -1).mean() > 0.8   # bearish structure in decline
+    assert (out["choch"].iloc[255:320] > 0).any()                 # bullish shift after bottom
+    assert out["ms_trend"].iloc[-1] == 1
+    assert (out["fvg_new"] != 0).any()
+
+
+def test_liquidity_sweep():
+    # swing low at 9.0 formed, later a wick to 8.8 that closes back at 9.5
+    rows = [[10, 10.2, 9.8, 10], [10, 10.1, 9.5, 9.6], [9.6, 9.7, 9.0, 9.2], [9.2, 9.9, 9.1, 9.8],
+            [9.8, 10.3, 9.7, 10.2], [10.2, 10.4, 9.9, 10.0], [10.0, 10.1, 8.8, 9.5]]
+    out = ict.compute(_bars(rows), k=1)
+    assert out["sweep"].iloc[-1] == 1 and out["sweep_level"].iloc[-1] == 9.0
+
+
+def test_killzones():
+    assert ict.killzone(pd.Timestamp("2025-01-15 08:00", tz="UTC")) == "London"   # 03:00 NY
+    assert ict.killzone(pd.Timestamp("2025-01-15 13:30", tz="UTC")) == "NY AM"    # 08:30 NY
+
+
+def test_ict_no_lookahead():
+    closes = wave_reversal()
+    df = analysis.prepare(make_df(closes))
+    full = ict.compute(df)
+    for i in (150, 299, 320, 350):
+        part = ict.compute(df.iloc[: i + 1])
+        pd.testing.assert_series_equal(full.iloc[i].drop("killzone").astype(float),
+                                       part.iloc[-1].drop("killzone").astype(float), check_names=False)
+
+
+def test_signal_includes_ict_reasons():
+    closes = wave_reversal()
+    d = analysis.prepare(make_df(closes))
+    sigs = [s for s in (analysis.turning_point(d, i) for i in range(250, 330)) if s]
+    assert any(any(r.startswith("ICT") for r in s.reasons) for s in sigs)

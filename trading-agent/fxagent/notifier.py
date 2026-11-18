@@ -24,10 +24,12 @@ def format_signal(a: Analysis) -> str:
         "",
         "Why:",
         *[f" • {r}" for r in s.reasons],
+        *([""] + [f" ◦ {x}" for x in s.notes] if s.notes else []),
         "",
         f"Entry: {_fmt(s.entry)}",
         f"Stop loss: {_fmt(s.stop_loss)}",
-        f"TP1: {_fmt(s.take_profit_1)}   TP2: {_fmt(s.take_profit_2)}",
+        f"TP1: {_fmt(s.take_profit_1)}   TP2: {_fmt(s.take_profit_2)}"
+        + (f"   Liquidity target: {_fmt(s.liquidity_target)}" if s.liquidity_target else ""),
         f"RSI {a.indicators['RSI']} | CCI {a.indicators['CCI']} | ADX {a.indicators['ADX']}",
         "",
         "Not financial advice. Always manage your risk.",
@@ -40,6 +42,10 @@ def format_status(a: Analysis) -> str:
     htf = f" | HTF {a.higher_tf_trend}" if a.higher_tf_trend else ""
     cs = f" | candles: {', '.join(a.candles)}" if a.candles else ""
     i = a.indicators
+    if "Structure" in i:
+        ev = f" [{', '.join(i['ICT_events'])}]" if i["ICT_events"] else ""
+        kz = f" {i['Killzone']}" if i["Killzone"] != "-" else ""
+        cs += f" | ICT {i['Structure']} {i['PD_zone']}{kz}{ev}"
     return (
         f"{icon} {a.symbol:<7} {a.timeframe:<3} {_fmt(a.price):>11}  "
         f"{a.trend:<7} {a.score:+6.1f} ({a.strength}){htf} | "
