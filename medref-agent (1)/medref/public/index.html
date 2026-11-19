@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MedRef Agent — drug monographs & clinical algorithms</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="logo" href="/" aria-label="MedRef home">
+        <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect width="32" height="32" rx="8" fill="currentColor"/><path d="M13 7h6v6h6v6h-6v6h-6v-6H7v-6h6z" fill="#fff"/></svg>
+        <span>MedRef<em>agent</em></span>
+      </a>
+      <span id="demoBadge" class="badge badge-demo" hidden>DEMO MODE</span>
+    </div>
+  </header>
+
+  <section class="hero" id="hero">
+    <div class="wrap">
+      <form id="searchForm" class="search" autocomplete="off">
+        <div class="seg" role="tablist" aria-label="Search type">
+          <button type="button" role="tab" class="seg-btn active" data-mode="medicine" aria-selected="true">Medicine</button>
+          <button type="button" role="tab" class="seg-btn" data-mode="pathology" aria-selected="false">Pathology</button>
+        </div>
+        <div class="search-row">
+          <svg class="search-ic" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input id="q" name="q" type="search" placeholder="Medicine name — e.g. amoxicillin, Eliquis, metformin" aria-label="Search" minlength="2" maxlength="120" required />
+          <select id="lang" aria-label="Language">
+            <option value="en">EN</option>
+            <option value="fr">FR</option>
+            <option value="km">ខ្មែរ</option>
+            <option value="vi">VI</option>
+            <option value="es">ES</option>
+          </select>
+          <button class="btn-primary" type="submit" id="goBtn">Research</button>
+        </div>
+        <div id="recent" class="recent"></div>
+      </form>
+    </div>
+  </section>
+
+  <main class="wrap" id="main">
+    <section id="progress" class="progress" hidden aria-live="polite">
+      <div class="progress-head">
+        <span class="spinner" aria-hidden="true"></span>
+        <strong id="progressTitle">Researching…</strong>
+        <span id="progressTimer" class="muted"></span>
+        <button id="stopBtn" class="btn-ghost" type="button">Stop</button>
+      </div>
+      <ol id="steps" class="steps"></ol>
+      <div class="found"><span id="foundCount">0</span> sources found <div id="foundList" class="found-list"></div></div>
+    </section>
+
+    <section id="error" class="error" hidden></section>
+    <article id="result" class="result" hidden></article>
+
+    <section id="empty" class="empty">
+      <div class="empty-grid">
+        <div>
+          <h2>Drug monographs</h2>
+          <p>Dosing (adult, paediatric, renal, hepatic), contraindications, warnings, adverse effects by frequency, interactions, pregnancy & lactation. Researched live from regulators and formularies (FDA/DailyMed, EMA, eMC, BNF, ANSM, WHO…).</p>
+        </div>
+        <div>
+          <h2>Clinical algorithms</h2>
+          <p>Step-by-step diagnostic and management pathways for a condition, built from current society guidelines (NICE, ESC, AHA, IDSA, WHO, HAS…), with severity scores and treatment lines.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot wrap">
+    <p><strong>For healthcare professionals.</strong> AI-generated research summaries can contain errors or be out of date. Always verify against the official product information (SmPC / prescribing information) and local guidelines before prescribing.</p>
+  </footer>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
