@@ -12,7 +12,7 @@ export function agentConfig(env = process.env) {
     model: env.CLAUDE_MODEL || 'claude-sonnet-5-5',
     searchTool: env.WEB_SEARCH_TOOL || 'web_search_20250305',
     maxSearches: Number(env.MAX_SEARCHES || 12),
-    maxTokens: Number(env.MAX_TOKENS || 16000),
+    maxTokens: Number(env.MAX_TOKENS || 32000),
     openFdaKey: env.OPENFDA_API_KEY || '',
   };
 }
@@ -47,6 +47,7 @@ export async function runResearch({ mode, query, lang = 'en', signal, onEvent = 
   const queries = [];
   const consulted = new Map();
   let finalText = '';
+  let lastStop = null;
 
   // The API may return stop_reason "pause_turn" on long research turns: send the partial turn back to continue.
   for (let round = 0; round < 5; round++) {
@@ -74,16 +75,38 @@ export async function runResearch({ mode, query, lang = 'en', signal, onEvent = 
     });
 
     finalText += msg.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
+    lastStop = msg.stop_reason;
     if (msg.stop_reason === 'pause_turn') {
       messages.push({ role: 'assistant', content: msg.content });
       continue;
     }
-    if (msg.stop_reason === 'max_tokens') onEvent('status', { step: 'warn', text: 'Answer hit the length limit; some sections may be cut.' });
     break;
   }
 
-  const data = extractJson(finalText);
-  if (!data) throw new Error('The agent did not return a readable result. Try again or rephrase the search.');
+  let data = extractJson(finalText);
+  if (!data) {
+    // Repair pass: the answer was cut off or malformed. Ask Claude (no tools) to rewrite it as valid JSON.
+    console.warn(`[agent] unreadable answer (stop_reason=${lastStop}, ${finalText.length} chars). Start: ${finalText.slice(0, 300).replace(/\s+/g, ' ')}`);
+    onEvent('status', { step: 'repair', text: 'Formatting the result…' });
+    const repair = await streamMessage({
+      model: cfg.model,
+      max_tokens: cfg.maxTokens,
+      messages: [{
+        role: 'user',
+        content: `${prompt}\n\n---\nThe research has ALREADY been done. Below are the research notes / draft answer` +
+          `${lastStop === 'max_tokens' ? ' (it was CUT OFF by the length limit)' : ' (it was not valid JSON)'}.` +
+          ` Do NOT search again. Using only this material, reply with ONLY the complete, valid JSON object in the shape above.` +
+          ` Keep every string short (max ~25 words), at most 18 algorithm nodes and 12 interactions, so it fits.` +
+          ` Keep source URLs exactly as given.\n\n<draft>\n${finalText.slice(0, 120000)}\n</draft>`,
+      }],
+    }, cfg.apiKey, signal, () => {});
+    const repairText = repair.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
+    data = extractJson(repairText);
+    if (!data) {
+      console.warn(`[agent] repair failed (stop_reason=${repair.stop_reason}). Start: ${repairText.slice(0, 300).replace(/\s+/g, ' ')}`);
+      throw new Error('The agent did not return a readable result. Try again, or use a more specific search (e.g. "acute diarrhea in adults").');
+    }
+  }
 
   // Make sure the official label appears in the sources even if the model forgot it.
   if (labelSource && Array.isArray(data.sources) && !data.sources.some((s) => s.url === labelSource.url)) {
@@ -172,14 +195,25 @@ async function streamMessage(body, apiKey, signal, onBlock) {
   return message;
 }
 
-// Tolerant JSON extraction: last ```json fence, else first "{" .. last "}".
+// Tolerant JSON extraction: fenced block (closed or not), else first "{" .. last "}".
+// Also tolerates trailing commas and smart quotes around keys.
 export function extractJson(text) {
-  const fences = [...text.matchAll(/```(?:json)?\s*([\s\S]*?)```/g)];
-  const candidates = fences.reverse().map((m) => m[1]);
+  if (!text) return null;
+  const candidates = [];
+  const fences = [...text.matchAll(/```(?:json)?\s*([\s\S]*?)```/g)].reverse().map((m) => m[1]);
+  candidates.push(...fences);
+  const open = text.lastIndexOf('```json');
+  if (open !== -1) candidates.push(text.slice(open + 7));
   const a = text.indexOf('{'), b = text.lastIndexOf('}');
   if (a !== -1 && b > a) candidates.push(text.slice(a, b + 1));
-  for (const c of candidates) {
-    try { return JSON.parse(c); } catch {}
+  for (const raw of candidates) {
+    const c = raw.trim();
+    for (const variant of [c, c.replace(/,\s*([}\]])/g, '$1').replace(/[\u201C\u201D]/g, '"')]) {
+      try {
+        const v = JSON.parse(variant);
+        if (v && typeof v === 'object') return v;
+      } catch {}
+    }
   }
   return null;
 }

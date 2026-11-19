@@ -72,7 +72,8 @@ RESEARCH RULES
 OUTPUT FORMAT
 - After researching, reply with ONE JSON object inside a single \`\`\`json code fence and nothing
   after it. No commentary outside the fence. Keep strings concise and clinical
-  (monograph style, like VIDAL / BNF).
+  (monograph style, like VIDAL / BNF). Short phrases, not paragraphs: the whole JSON must stay
+  under about 5000 words. Valid JSON only: double quotes, no comments, no trailing commas.
 - Items written as {"text": "...", "refs": [1,2]}.`;
 
 export function medicinePrompt(query, lang, labelExcerpt) {
