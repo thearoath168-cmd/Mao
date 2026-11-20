@@ -37,6 +37,8 @@ a { color: var(--brand); }
 .search { background: var(--card); border-radius: 16px; padding: 14px; box-shadow: 0 10px 30px rgba(19,35,46,.12); }
 .seg { display: inline-flex; background: var(--paper); border-radius: 10px; padding: 3px; margin-bottom: 10px; }
 .seg-btn { border: 0; background: transparent; font: 500 14px var(--sans); color: var(--ink-2); padding: 7px 16px; border-radius: 8px; cursor: pointer; }
+.seg-link { display: inline-flex; align-items: center; font: 500 14px var(--sans); color: var(--ink-2); padding: 7px 16px; border-radius: 8px; text-decoration: none; }
+.seg-link:hover { color: var(--brand); }
 .seg-btn.active { background: var(--card); color: var(--brand-ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); font-weight: 600; }
 .search-row { display: flex; align-items: center; gap: 8px; border: 1.5px solid var(--line); border-radius: 12px; padding: 4px 4px 4px 12px; }
 .search-row:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
@@ -74,7 +76,7 @@ a { color: var(--brand); }
 
 /* Empty state */
 .empty { margin: 24px 0; }
-.empty-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.empty-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .empty-grid > div { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
 .empty h2 { font: 700 19px var(--serif); margin: 0 0 6px; }
 .empty p { margin: 0; color: var(--ink-2); }
