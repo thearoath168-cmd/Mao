@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BaZi Master · 八字大师</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;600&family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f5efe2;--card:#fbf7ee;--ink:#1d1a17;--ink2:#4a433b;--mute:#7d7366;--line:#e2d6bf;--cin:#b0362a;--gold:#b0812f;--blue:#3a67b0;
+--wood:#3f7a4c;--fire:#c0392b;--earth:#a06d25;--metal:#5d6470;--water:#2b4d7e;--good:#2f7a4a;--bad:#b0362a;--mixed:#a07a1f;
+--serif:"Cormorant Garamond",Georgia,"Noto Serif SC","Noto Serif CJK SC",serif;--sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--cjk:"Noto Serif SC","Noto Serif CJK SC","Songti SC",serif}
+*{box-sizing:border-box}html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}
+.app{max-width:1240px;margin:0 auto;padding:0 20px 40px}
+.hero{background:#17130f;color:#efe6d3;margin:0 -20px 22px;padding:22px 28px;border-bottom:3px solid var(--gold)}
+.brand{display:flex;gap:16px;align-items:center;max-width:1200px;margin:0 auto}
+.seal{display:grid;place-items:center;width:58px;height:58px;background:var(--cin);color:#f7e9d6;font-family:"Ma Shan Zheng",var(--cjk);font-size:24px;border-radius:6px;transform:rotate(-4deg);flex:none;box-shadow:0 0 0 3px #17130f,0 0 0 4px var(--cin)}
+.hero h1{margin:0;font-family:var(--serif);font-weight:600;font-size:34px;letter-spacing:.01em;line-height:1.1}
+.hero p{margin:2px 0 0;color:#cdbfa4;font-size:14px}
+.grid{display:grid;grid-template-columns:330px 1fr;gap:22px;align-items:start}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 18px 14px;position:sticky;top:12px}
+h2{font-family:var(--serif);font-size:24px;font-weight:600;margin:0 0 10px;line-height:1.2}
+h2 small,h3 small{font-family:var(--sans);font-size:12px;color:var(--mute);font-weight:400}
+h3{font-size:14px;margin:18px 0 8px;font-weight:600}
+label,fieldset{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin:0 0 10px;border:0;padding:0}
+legend{padding:0;margin-bottom:4px}
+input,select{display:block;width:100%;margin-top:4px;padding:9px 10px;border:1px solid var(--line);border-radius:7px;background:#fff;font:inherit;font-size:15px;color:var(--ink)}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-top:4px;background:#fff}
+.seg button{flex:1;border:0;background:none;padding:9px 0;font:inherit;font-size:14px;cursor:pointer;color:var(--ink2)}
+.seg button.on{background:var(--ink);color:#fff}
+.btns{display:flex;gap:8px;margin-top:4px}
+.btns button{flex:1;padding:11px 0;border-radius:8px;font:inherit;font-weight:600;cursor:pointer;font-size:14px}
+.primary{background:var(--cin);color:#fff;border:1px solid var(--cin)}.primary:hover{background:#962b21}
+.ghost{background:#fff;border:1px solid var(--ink);color:var(--ink)}.ghost:hover{background:#f0e8d8}
+.msg{font-size:13px;color:var(--cin);margin:8px 0 0}
+.empty,.fine{font-size:12.5px;color:var(--mute)}.center{text-align:center}
+.profiles{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:260px;overflow:auto}
+.profiles li{display:flex;border:1px solid var(--line);border-radius:8px;background:#fff;overflow:hidden}
+.pbtn{flex:1;text-align:left;border:0;background:none;padding:8px 10px;cursor:pointer;font:inherit}
+.pbtn b{display:block;font-size:14px}.pbtn span{font-size:12px;color:var(--mute)}
+.pbtn:hover{background:#f6efe1}
+.del{border:0;background:none;width:34px;font-size:18px;color:var(--mute);cursor:pointer}.del:hover{color:var(--cin);background:#f6e3df}
+main{display:grid;gap:18px;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.intro ol{padding-left:20px}
+.verdict{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center;border-left:6px solid var(--mixed)}
+.verdict.good{border-left-color:var(--good)}.verdict.bad{border-left-color:var(--bad)}
+.vbig{font-family:var(--serif);font-weight:700;font-size:52px;line-height:1;padding:14px 20px;border-radius:10px;color:#fff;background:var(--mixed);letter-spacing:.04em}
+.good .vbig{background:var(--good)}.bad .vbig{background:var(--bad)}
+.vk{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--mute);font-weight:600}
+.verdict h2{font-size:32px;margin:2px 0 6px}
+.vmeta{font-size:14px;color:var(--ink2)}
+.meter{position:relative;height:8px;border-radius:4px;margin:14px 0 4px;background:linear-gradient(90deg,var(--bad),#d9c9a6 50%,var(--good))}
+.meter i{position:absolute;top:-5px;width:4px;height:18px;margin-left:-2px;background:var(--ink);border-radius:2px;box-shadow:0 0 0 2px var(--card)}
+.mlab{display:flex;justify-content:space-between;font-size:11px;color:var(--mute)}
+.fc{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.fcard{position:relative;padding-top:16px}
+.fic{position:absolute;top:14px;right:16px;font-family:var(--cjk);font-size:22px;color:var(--cin);opacity:.85}
+.fcard h3{margin:0 0 6px;font-family:var(--serif);font-size:21px}
+.fcard p{margin:0;font-size:14px;color:var(--ink2)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.ch{font-family:var(--cjk);font-weight:700}.wood{color:var(--wood)}.fire{color:var(--fire)}.earth{color:var(--earth)}.metal{color:var(--metal)}.water{color:var(--water)}
+.pillars{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+.pcol{text-align:center;padding:10px 4px;border-right:1px dashed var(--line)}.pcol:last-child{border-right:0}.pcol.dm{background:#f3e6d0}
+.plab{font-size:11px;color:var(--mute);line-height:1.2}.plab em{font-style:normal}
+.pgod{font-size:11.5px;color:var(--cin);margin:6px 0 2px;font-family:var(--cjk);min-height:16px}
+.big .ch{font-size:38px;line-height:1.15}
+.phid{font-size:13px;margin-top:4px}.phid .ch{margin:0 2px}.ch.sm{font-size:15px}
+.small{font-size:13px;color:var(--ink2);margin:10px 0 0}
+.els{display:grid;gap:8px}
+.elrow{display:grid;grid-template-columns:96px 1fr 98px;gap:10px;align-items:center;font-size:13px}
+.elbar{height:10px;background:#efe6d4;border-radius:5px;overflow:hidden}.elbar i{display:block;height:100%;border-radius:0 5px 5px 0}
+.elbar i.wood{background:var(--wood)}.elbar i.fire{background:var(--fire)}.elbar i.earth{background:var(--earth)}.elbar i.metal{background:var(--metal)}.elbar i.water{background:var(--water)}
+.eltag{font-size:11.5px;font-weight:600;text-align:right}.eltag.fav{color:var(--good)}.eltag.unf{color:var(--bad)}.eltag.neu{color:var(--mute)}
+.mt{margin-top:16px}
+.lucks{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+.lk{display:grid;justify-items:center;border:1px solid var(--line);border-radius:6px;padding:4px 2px;background:#fff;min-width:0}
+.lk.on{border-color:var(--cin);box-shadow:0 0 0 1px var(--cin)}
+.la{font-size:11px;color:var(--mute)}.ly{font-size:10px;color:var(--mute)}
+.notes{margin:0;padding-left:18px}.notes li{margin:4px 0;color:var(--ink2)}
+.chartwrap{position:relative}
+.chartwrap svg{width:100%;height:auto;display:block;cursor:crosshair}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);margin:0 0 6px;align-items:center}
+.legend .hint{margin-left:auto;color:var(--mute)}
+.sw{display:inline-block;width:20px;height:0;vertical-align:middle;margin-right:6px}
+.sw.line{border-top:2px solid var(--blue)}.sw.step{border-top:2px dashed var(--gold)}
+.grid line,.chartwrap .grid{stroke:#e7dcc7;stroke-width:1}
+.chartwrap .zero{stroke:#a99c84;stroke-width:1}
+.chartwrap .dec{stroke:#e7dcc7;stroke-dasharray:2 3}
+.chartwrap .declab{font-size:11px;fill:var(--mute);font-family:var(--cjk)}
+.chartwrap .ax{font-size:11px;fill:var(--mute)}.chartwrap .ax.good{fill:var(--good)}.chartwrap .ax.bad{fill:var(--bad)}
+.chartwrap .age{fill:#b3a78f}
+.aup{fill:var(--good);opacity:.12}.adn{fill:var(--bad);opacity:.12}
+.lyear{fill:none;stroke:var(--blue);stroke-width:2;stroke-linejoin:round}
+.lstep{fill:none;stroke:var(--gold);stroke-width:2;stroke-dasharray:6 4}
+.selln{stroke:var(--cin);stroke-width:1.5}.seldot{fill:var(--cin);stroke:var(--card);stroke-width:2}
+.hovln{stroke:var(--ink);stroke-width:1;opacity:.35}.hovdot{fill:var(--blue);stroke:var(--card);stroke-width:2}
+.tip{position:absolute;top:34px;background:#1d1a17;color:#f2ead9;font-size:12px;line-height:1.5;padding:8px 10px;border-radius:7px;pointer-events:none;width:178px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+@media (max-width:900px){.grid{grid-template-columns:1fr}.panel{position:static}.two{grid-template-columns:1fr}.verdict{grid-template-columns:1fr}.vbig{justify-self:start;font-size:40px}.legend .hint{margin-left:0}}
+</style></head>
+<body><div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+<script>/* BaZi Master engine — methods from "The BaZi Handbook" (Kang Puthearoath) */
+const BZ = (() => {
+  const S = "甲乙丙丁戊己庚辛壬癸", B = "子丑寅卯辰巳午未申酉戌亥";
+  const EL = ["木", "火", "土", "金", "水"];
+  const EL_EN = { "木": "Wood", "火": "Fire", "土": "Earth", "金": "Metal", "水": "Water" };
+  const B_EL = ["水", "土", "木", "木", "土", "火", "火", "土", "金", "金", "土", "水"];
+  const ANIMAL = ["Rat", "Ox", "Tiger", "Rabbit", "Dragon", "Snake", "Horse", "Goat", "Monkey", "Rooster", "Dog", "Pig"];
+  const HIDDEN = { "子": "癸", "丑": "己癸辛", "寅": "甲丙戊", "卯": "乙", "辰": "戊乙癸", "巳": "丙戊庚", "午": "丁己", "未": "己丁乙", "申": "庚壬戊", "酉": "辛", "戌": "戊辛丁", "亥": "壬甲" };
+  const TG = { "0t": "比肩", "0f": "劫财", "1t": "食神", "1f": "伤官", "2t": "偏财", "2f": "正财", "3t": "七杀", "3f": "正官", "4t": "偏印", "4f": "正印" };
+  const TG_EN = { "比肩": "Friend", "劫财": "Rob Wealth", "食神": "Eating God", "伤官": "Hurting Officer", "偏财": "Indirect Wealth", "正财": "Direct Wealth", "七杀": "Seven Killings", "正官": "Direct Officer", "偏印": "Indirect Resource", "正印": "Direct Resource" };
+  const ORGAN = { "木": "liver and gall bladder, tendons and eyes", "火": "heart, circulation and blood pressure", "土": "stomach, spleen and digestion", "金": "lungs, large intestine, skin and breathing", "水": "kidneys, bladder, bones and hormones" };
+
+  const sEl = c => S.includes(c) ? EL[Math.floor(S.indexOf(c) / 2)] : B_EL[B.indexOf(c)];
+  const tengod = (day, x) => {
+    const d = S.indexOf(day), s = S.indexOf(x);
+    const diff = ((Math.floor(s / 2) - Math.floor(d / 2)) % 5 + 5) % 5;
+    return TG[diff + (d % 2 === s % 2 ? "t" : "f")];
+  };
+  const relOf = (dmEl, e) => ((EL.indexOf(e) - EL.indexOf(dmEl)) % 5 + 5) % 5; // 0 same 1 output 2 wealth 3 officer 4 resource
+  const jz = i => S[((i % 10) + 10) % 10] + B[((i % 12) + 12) % 12];
+  const jzIndex = p => { for (let i = 0; i < 60; i++) if (S[i % 10] === p[0] && B[i % 12] === p[1]) return i; return 0; };
+
+  // ---------- astronomy ----------
+  function jd(y, m, d, h) {
+    if (m <= 2) { y -= 1; m += 12; }
+    const A = Math.floor(y / 100), Bb = 2 - A + Math.floor(A / 4);
+    return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d + Bb - 1524.5 + h / 24;
+  }
+  function sunLon(J) {
+    const T = (J - 2451545.0) / 36525;
+    const L0 = 280.46646 + 36000.76983 * T + 0.0003032 * T * T;
+    const M = (357.52911 + 35999.05029 * T - 0.0001537 * T * T) * Math.PI / 180;
+    const C = (1.914602 - 0.004817 * T - 0.000014 * T * T) * Math.sin(M) + (0.019993 - 0.000101 * T) * Math.sin(2 * M) + 0.000289 * Math.sin(3 * M);
+    const om = (125.04 - 1934.136 * T) * Math.PI / 180;
+    return (((L0 + C - 0.00569 - 0.00478 * Math.sin(om)) % 360) + 360) % 360;
+  }
+  // signed angular distance a-b in (-180,180]
+  const adiff = (a, b) => { let x = ((a - b) % 360 + 540) % 360 - 180; return x; };
+  // days from J to the next (dir=+1) or previous (dir=-1) jie (lon ≡ 15 mod 30)
+  function daysToJie(J, dir) {
+    const lon = sunLon(J);
+    let target = dir > 0 ? Math.ceil((lon - 15) / 30 + 1e-9) * 30 + 15 : Math.floor((lon - 15) / 30 - 1e-9) * 30 + 15;
+    target = ((target % 360) + 360) % 360;
+    let a = J, b = J + dir * 35;
+    for (let i = 0; i < 60; i++) {
+      const mid = (a + b) / 2;
+      const dm = adiff(sunLon(mid), target);
+      if ((dir > 0 && dm < 0) || (dir < 0 && dm > 0)) a = mid; else b = mid;
+    }
+    return Math.abs((a + b) / 2 - J);
+  }
+
+  // ---------- chart ----------
+  function cast({ date, time, sex, tz }) {
+    const [y, m, d] = date.split("-").map(Number);
+    let [hh, mi] = (time || "12:00").split(":").map(Number);
+    const Jut = jd(y, m, d, hh + mi / 60 - tz);
+    const lon = sunLon(Jut);
+    const mIdx = Math.floor((((lon - 315) % 360) + 360) % 360 / 30);
+    let yy = y;
+    if (m === 1 || (m === 2 && lon < 315 && lon > 200)) yy = y - 1;
+    const ys = ((yy - 4) % 10 + 10) % 10, yb = ((yy - 4) % 12 + 12) % 12;
+    const ms = ((ys % 5) * 2 + 2 + mIdx) % 10, mb = (2 + mIdx) % 12;
+    let dn = Math.floor(jd(y, m, d, 0) + 0.5);
+    if (hh >= 23) dn += 1;
+    const dg = ((dn + 49) % 60 + 60) % 60;
+    const ds = dg % 10, db = dg % 12;
+    const hb = Math.floor((hh + 1) / 2) % 12;
+    const hs = ((ds % 5) * 2 + hb) % 10;
+    const pillars = [S[ys] + B[yb], S[ms] + B[mb], S[ds] + B[db], S[hs] + B[hb]];
+    // luck
+    const yangYear = ys % 2 === 0;
+    const forward = (yangYear && sex === "M") || (!yangYear && sex === "F");
+    const days = daysToJie(Jut, forward ? 1 : -1);
+    const startAge = Math.max(1, Math.round(days / 3));
+    const mi0 = jzIndex(pillars[1]);
+    const lucks = [];
+    for (let k = 1; k <= 9; k++) {
+      const p = jz(forward ? mi0 + k : mi0 - k);
+      lucks.push({ p, age: startAge + 10 * (k - 1), year: y + startAge + 10 * (k - 1) });
+    }
+    const chart = { pillars, dm: pillars[2][0], birthYear: y, ganzhiYear: yy, forward, startAgeExact: days / 3, startAge, lucks, sex, lon };
+    analyse(chart);
+    return chart;
+  }
+
+  function hiddenW(b) {
+    const h = HIDDEN[b]; const w = h.length === 1 ? [1] : h.length === 2 ? [0.7, 0.3] : [0.6, 0.3, 0.1];
+    return h.split("").map((c, i) => [sEl(c), w[i]]);
+  }
+
+  function analyse(c) {
+    const [Y, M, D, H] = c.pillars, dmEl = sEl(c.dm);
+    const tot = { "木": 0, "火": 0, "土": 0, "金": 0, "水": 0 };
+    const add = (e, w) => tot[e] += w;
+    add(dmEl, 1.0);
+    add(sEl(Y[0]), 0.8); add(sEl(M[0]), 1.0); add(sEl(H[0]), 1.0);
+    [[Y[1], 0.8], [M[1], 3.0], [D[1], 1.5], [H[1], 1.0]].forEach(([b, w]) => hiddenW(b).forEach(([e, x]) => add(e, w * x)));
+    // branch combinations: full triad / meeting adds 2, half triad with the peak adds 1
+    const nb = [Y[1], M[1], D[1], H[1]];
+    [["申子辰", "水"], ["亥卯未", "木"], ["寅午戌", "火"], ["巳酉丑", "金"]].forEach(([t, e]) => {
+      const n = [...t].filter(x => nb.includes(x)).length;
+      if (n === 3) add(e, 2); else if (n === 2 && nb.includes(t[1])) add(e, 1);
+    });
+    [["亥子丑", "水"], ["寅卯辰", "木"], ["巳午未", "火"], ["申酉戌", "金"]].forEach(([t, e]) => { if ([...t].every(x => nb.includes(x))) add(e, 2); });
+    const all = Object.values(tot).reduce((a, b) => a + b, 0);
+    const self = tot[dmEl] + tot[EL[(EL.indexOf(dmEl) + 4) % 5]];
+    const ratio = self / all;
+    let type;
+    if (ratio >= 0.8) type = "dominant"; else if (ratio <= 0.15) type = "follow";
+    else if (ratio >= 0.55) type = "strong"; else if (ratio <= 0.45) type = "weak"; else type = "balanced";
+    const val = {};
+    const R = [0, 0, 0, 0, 0];
+    if (type === "strong") { R[0] = -1; R[4] = -0.8; R[1] = 1; R[2] = 0.8; R[3] = ratio > 0.65 ? 0.4 : 0.7; }
+    else if (type === "weak") { R[4] = 1; R[0] = 0.8; R[1] = -0.8; R[2] = -0.9; R[3] = -1; }
+    else if (type === "dominant") { R[0] = 1; R[4] = 0.8; R[1] = 0.5; R[2] = -0.6; R[3] = -1; }
+    else if (type === "balanced") {
+      const k = ratio >= 0.5 ? 1 : -1;
+      if (k > 0) { R[0] = -0.5; R[4] = -0.4; R[1] = 0.5; R[2] = 0.4; R[3] = 0.35; }
+      else { R[4] = 0.5; R[0] = 0.4; R[1] = -0.4; R[2] = -0.45; R[3] = -0.5; }
+    }
+    if (type !== "follow") EL.forEach(e => val[e] = R[relOf(dmEl, e)]);
+    else {
+      let best = null; EL.forEach(e => { if (e !== dmEl && e !== EL[(EL.indexOf(dmEl) + 4) % 5] && (!best || tot[e] > tot[best])) best = e; });
+      EL.forEach(e => val[e] = -0.3);
+      val[best] = 1; val[EL[(EL.indexOf(best) + 4) % 5]] = 0.6; val[dmEl] = -1; val[EL[(EL.indexOf(dmEl) + 4) % 5]] = -0.9;
+    }
+    // climate adjustment 调候
+    const season = "寅卯辰".includes(M[1]) ? "spring" : "巳午未".includes(M[1]) ? "summer" : "申酉戌".includes(M[1]) ? "autumn" : "winter";
+    let climate = "";
+    if (season === "winter" && tot["火"] < 1.2) { val["火"] = Math.min(1, val["火"] + 0.5); val["水"] = Math.max(-1, val["水"] - 0.3); climate = "Born in deep winter with little Fire: warmth (Fire) is given extra weight (调候 climate adjustment)."; }
+    if (season === "summer" && tot["水"] < 1.2) { val["水"] = Math.min(1, val["水"] + 0.5); val["火"] = Math.max(-1, val["火"] - 0.3); climate = "Born in high summer with little Water: moisture (Water) is given extra weight (调候 climate adjustment)."; }
+    const sorted = [...EL].sort((a, b) => val[b] - val[a]);
+    Object.assign(c, { tot, all, ratio, type, val, useful: sorted[0], favourable: sorted[1], unfavourable: sorted[4], season, climate, dmEl });
+  }
+
+  // ---------- relationships ----------
+  const CLASH = { "子": "午", "午": "子", "丑": "未", "未": "丑", "寅": "申", "申": "寅", "卯": "酉", "酉": "卯", "辰": "戌", "戌": "辰", "巳": "亥", "亥": "巳" };
+  const COMB6 = { "子": "丑", "丑": "子", "寅": "亥", "亥": "寅", "卯": "戌", "戌": "卯", "辰": "酉", "酉": "辰", "巳": "申", "申": "巳", "午": "未", "未": "午" };
+  const SCLASH = { "甲": "庚", "庚": "甲", "乙": "辛", "辛": "乙", "丙": "壬", "壬": "丙", "丁": "癸", "癸": "丁" };
+  const SCOMB = { "甲": "己", "己": "甲", "乙": "庚", "庚": "乙", "丙": "辛", "辛": "丙", "丁": "壬", "壬": "丁", "戊": "癸", "癸": "戊" };
+  const TRIADS = [["申子辰", "水"], ["亥卯未", "木"], ["寅午戌", "火"], ["巳酉丑", "金"]];
+  const PEACH = { "申": "酉", "子": "酉", "辰": "酉", "寅": "卯", "午": "卯", "戌": "卯", "巳": "午", "酉": "午", "丑": "午", "亥": "子", "卯": "子", "未": "子" };
+  const HORSE = { "申": "寅", "子": "寅", "辰": "寅", "寅": "申", "午": "申", "戌": "申", "巳": "亥", "酉": "亥", "丑": "亥", "亥": "巳", "卯": "巳", "未": "巳" };
+  const NOBLE = { "甲": "丑未", "戊": "丑未", "庚": "丑未", "乙": "子申", "己": "子申", "丙": "亥酉", "丁": "亥酉", "辛": "寅午", "壬": "卯巳", "癸": "卯巳" };
+  const voidOf = p => { const i = jzIndex(p); const x = Math.floor(i / 10); return B[(x * 10 + 10) % 12] + B[(x * 10 + 11) % 12]; };
+
+  const elVal = (c, ch) => S.includes(ch) ? c.val[sEl(ch)] : hiddenW(ch).reduce((a, [e, w]) => a + c.val[e] * w, 0);
+  // a branch that joins a triad (full, or half including the peak) with the given branches takes the triad's element
+  function triadEl(b, others) {
+    for (const [t, e] of TRIADS) {
+      if (!t.includes(b)) continue;
+      const set = new Set(others.concat([b]).filter(x => t.includes(x)));
+      if (set.size === 3 || (set.size === 2 && set.has(t[1]))) return e;
+    }
+    return null;
+  }
+  const brVal = (c, b, others) => { const e = triadEl(b, others); return e ? 0.5 * elVal(c, b) + 0.5 * c.val[e] : elVal(c, b); };
+  const pScore = (c, p) => 0.4 * elVal(c, p[0]) + 0.6 * elVal(c, p[1]);
+
+  function luckAt(c, Y) {
+    let cur = null;
+    for (const l of c.lucks) if (Y >= l.year) cur = l;
+    return cur || { p: c.pillars[1], age: 0, year: c.birthYear, pre: true };
+  }
+  const yearPillar = Y => jz(((Y - 4) % 60 + 60) % 60);
+
+  function evaluate(c, Y) {
+    const yp = yearPillar(Y), L = luckAt(c, Y), lp = L.p;
+    const natalB = c.pillars.map(p => p[1]);
+    const names = ["year", "month", "day", "hour"];
+    let ls = 0.4 * elVal(c, lp[0]) + 0.6 * brVal(c, lp[1], natalB);
+    let ys = 0.4 * elVal(c, yp[0]) + 0.6 * brVal(c, yp[1], natalB.concat([lp[1]]));
+    const notes = [], flags = {};
+    let adj = 0;
+    let yearPart = ys;
+    if (yp === lp) { yearPart *= 1.5; notes.push("Year and Luck Pillar are identical (岁运并临): effects doubled."); flags.doubled = true; }
+    // clashes of year branch on natal branches
+    natalB.forEach((b, i) => {
+      if (CLASH[yp[1]] === b) {
+        const v = elVal(c, b);
+        if (v < 0) { adj += 0.12; notes.push(`The year clashes your ${names[i]} branch ${b}, an unfavourable element — “medicine removing the illness”.`); }
+        else { adj -= 0.18; notes.push(`The year clashes your ${names[i]} branch ${b}, a supportive element — expect disruption in that area.`); }
+        flags["clash_" + names[i]] = v < 0 ? "good" : "bad";
+      }
+      if (COMB6[yp[1]] === b) { flags["comb_" + names[i]] = true; }
+    });
+    const D = c.pillars[2];
+    if (yp === D) { adj -= 0.25; notes.push("The year repeats your day pillar (伏吟): a restless, troubled year."); flags.fuyin = true; }
+    if (SCLASH[yp[0]] === D[0] && CLASH[yp[1]] === D[1]) { adj -= 0.3; notes.push("The year clashes your day pillar in stem and branch (反吟): major change around self and spouse."); flags.fanyin = true; }
+    if (SCOMB[yp[0]] === c.dm) { adj -= 0.08; notes.push("The year stem combines with your Day Master: entanglements and delays."); flags.dmComb = true; }
+    if (SCLASH[yp[0]] === lp[0] && CLASH[yp[1]] === lp[1]) { adj -= 0.22; notes.push("Year and Luck Pillar clash in stem and branch (天克地冲): an unsettled year."); flags.yearLuckClash = true; }
+    if (yp[0] === lp[0] && CLASH[yp[1]] === lp[1]) { notes.push("Same stem, clashing branches with the Luck Pillar: change — moving, travel or a job transfer."); flags.move = true; }
+    const pool = natalB.concat([lp[1], yp[1]]);
+    const has = x => pool.includes(x);
+    if (has("寅") && has("巳") && has("申") && [lp[1], yp[1]].some(b => "寅巳申".includes(b))) { adj -= 0.18; notes.push("Chart, luck and year form the 寅巳申 punishment: disputes or legal friction."); flags.punish = true; }
+    if (has("丑") && has("戌") && has("未") && [lp[1], yp[1]].some(b => "丑戌未".includes(b))) { adj -= 0.18; notes.push("Chart, luck and year form the 丑戌未 punishment: obstacles and quarrels."); flags.punish = true; }
+    TRIADS.forEach(([t, e]) => {
+      if ([...t].every(has) && t.includes(yp[1])) {
+        const v = c.val[e]; adj += v > 0 ? 0.18 : -0.18;
+        notes.push(`A full ${EL_EN[e]} triad ${t} forms this year — ${v > 0 ? "a strong boost of a useful element" : "a flood of an unfavourable element"}.`);
+        flags.triad = v > 0 ? "good" : "bad";
+      }
+    });
+    if (voidOf(D).includes(yp[1])) { notes.push("The year branch falls in your Void (空亡): both good and bad are softened."); flags.void = true; }
+    if (PEACH[c.pillars[0][1]] === yp[1] || PEACH[D[1]] === yp[1]) flags.peach = true;
+    if (HORSE[c.pillars[0][1]] === yp[1] || HORSE[D[1]] === yp[1]) flags.horse = true;
+    if (NOBLE[c.dm].includes(yp[1])) { adj += 0.05; flags.noble = true; }
+    let score = 0.5 * yearPart + 0.5 * ls + adj;
+    if (flags.void) score *= 0.7;
+    score = Math.max(-1, Math.min(1, score));
+    const gS = tengod(c.dm, yp[0]), gB = tengod(c.dm, HIDDEN[yp[1]][0]);
+    const lgS = tengod(c.dm, lp[0]), lgB = tengod(c.dm, HIDDEN[lp[1]][0]);
+    return { Y, yp, lp, luck: L, ys, ls, score, notes, flags, gS, gB, lgS, lgB, sFav: elVal(c, yp[0]) > 0, bFav: brVal(c, yp[1], natalB.concat([lp[1]])) > 0, lFav: brVal(c, lp[1], natalB) > 0, age: Y - c.birthYear };
+  }
+
+  function verdict(s) {
+    if (s >= 0.35) return { label: "Very good year", short: "GOOD", tone: "good" };
+    if (s >= 0.1) return { label: "Good year", short: "GOOD", tone: "good" };
+    if (s > -0.1) return { label: "Mixed year", short: "MIXED", tone: "mixed" };
+    if (s > -0.35) return { label: "Challenging year", short: "BAD", tone: "bad" };
+    return { label: "Difficult year", short: "BAD", tone: "bad" };
+  }
+
+  // ---------- forecasts (~50 words each) ----------
+  const wc = s => s.trim().split(/\s+/).length;
+  function compose(list, filler) {
+    let out = [];
+    for (const s of list) { if (!s) continue; if (wc(out.join(" ") + " " + s) > 58 && out.length) break; out.push(s); if (wc(out.join(" ")) >= 45) break; }
+    let i = 0;
+    while (wc(out.join(" ")) < 44 && i < filler.length) { if (wc(out.join(" ") + " " + filler[i]) <= 60) out.push(filler[i]); i++; }
+    return out.join(" ");
+  }
+  const isW = g => g === "正财" || g === "偏财", isO = g => g === "正官" || g === "七杀", isR = g => g === "正印" || g === "偏印", isP = g => g === "食神" || g === "伤官", isF = g => g === "比肩" || g === "劫财";
+
+  const GOD_THEME = {
+    "比肩": ["independence, friends and peers", "pride, impulsive spending and rivalry"],
+    "劫财": ["courage, drive and help from siblings", "competition, losses through others and quarrels"],
+    "食神": ["talent, enjoyment and creative output", "carelessness, day-dreaming and fatigue"],
+    "伤官": ["brilliant ideas, visibility and new ventures", "a sharp tongue, conflict with authority and gossip"],
+    "正财": ["steady income and practical progress", "materialism, worry over money and heavy spending"],
+    "偏财": ["opportunities, deals and generosity", "speculation and sudden losses"],
+    "正官": ["recognition, responsibility and promotion", "pressure, criticism and indecision"],
+    "七杀": ["ambition, leadership and hard-won success", "stress, rivals and sudden setbacks"],
+    "正印": ["support, learning and benefactors", "passivity, delays and dependence"],
+    "偏印": ["insight, study and unusual skills", "isolation, misunderstandings and blocked plans"],
+  };
+  function forecasts(c, r) {
+    const v = verdict(r.score), good = r.score >= 0.1, bad = r.score <= -0.1;
+    const tS = GOD_THEME[r.gS][r.sFav ? 0 : 1], tB = GOD_THEME[r.gB][r.bFav ? 0 : 1];
+    const lt = GOD_THEME[r.lgB][r.lFav ? 0 : 1];
+    const has = f => f(r.gS) || f(r.gB), favOf = f => (f(r.gS) && r.sFav) || (f(r.gB) && r.bFav);
+    const lHas = f => f(r.lgS) || f(r.lgB);
+    const weak = c.type === "weak" || c.type === "follow";
+    // LIFE
+    const life = compose([
+      `${r.Y} is a ${v.label.toLowerCase()} for you (score ${fmt(r.score)}).`,
+      `The first half is coloured by ${r.gS} ${TG_EN[r.gS]} — ${tS}; the second half by ${r.gB} ${TG_EN[r.gB]} — ${tB}.`,
+      r.luck.pre ? "You are still before your first Luck Pillar, so family and schooling set the background." : `Your ${r.lp} Luck Pillar adds a ${r.lFav ? "supportive" : "testing"} background of ${lt}.`,
+      r.flags.doubled ? "Year and luck repeat each other, so everything is amplified." : "",
+      r.flags.move || r.flags.horse ? "Travel, relocation or a change of base is likely." : "",
+      r.flags.noble ? "A Noble Star is active: helpful people appear when needed." : "",
+    ], [good ? "Use the momentum to start what matters most." : bad ? "Move carefully and keep reserves of time, money and energy." : "Steady effort brings steady results.", "Review progress at mid-year and adjust rather than forcing outcomes."]);
+    // LOVE
+    const spouseStar = c.sex === "M" ? isW : isO;
+    const love = compose([
+      has(spouseStar) ? (favOf(spouseStar) ? "Your partner star appears in a favourable form — a good year to meet someone, deepen commitment or marry." : "Your partner star appears under pressure: romance is active but demanding, so communicate patiently.") : "Your partner star is quiet this year, so love grows through everyday care rather than big events.",
+      r.flags.comb_day ? "The year combines with your spouse palace — closeness, engagement or reconciliation are favoured." : "",
+      r.flags.clash_day ? (r.flags.clash_day === "good" ? "A clash on your spouse palace shakes up an unhealthy pattern; change can bring relief." : "A clash on your spouse palace brings tension or time apart — avoid hasty decisions.") : "",
+      r.flags.peach ? "Peach Blossom is active: charm rises; singles meet people easily, couples should guard against jealousy." : "",
+      c.sex === "M" && has(g => g === "劫财") ? "Rob Wealth suggests rivals or money issues straining the relationship." : "",
+      c.sex === "F" && has(g => g === "伤官") ? "Hurting Officer can make you critical of your partner; choose words gently." : "",
+      r.flags.dmComb ? "Your Day Master is drawn into a combination — attraction is strong, but avoid entanglements." : "",
+      lHas(spouseStar) ? `Your current decade keeps the partner star in view${r.lFav ? ", supporting lasting bonds" : ", though with some strain"}.` : "",
+    ], ["Make time for shared plans and honest conversation.", "Small gestures of reliability matter more than grand promises.", "Listen first; most friction this year comes from misunderstanding, not from lack of care."]);
+    // CAREER
+    const career = compose([
+      has(isO) ? (favOf(isO) ? "Authority stars favour you: promotion, recognition, exams and official matters go well if you take responsibility." : "Authority stars bring pressure — demanding superiors, scrutiny or rivals; keep records and stay within the rules.") : "",
+      has(isP) ? (favOf(isP) ? "Output stars showcase your skills: create, pitch, teach or launch something of your own." : "Output stars may make you outspoken or scattered; finish what you start and avoid clashing with bosses.") : "",
+      has(isR) ? (favOf(isR) ? "Resource stars bring mentors, training, qualifications and useful documents." : "Resource stars slow things down: paperwork, delays or over-reliance on others.") : "",
+      has(isF) ? (favOf(isF) ? "Peers and colleagues support you; teamwork and partnerships move projects forward." : "Competition from peers is sharp; protect your ideas and credit.") : "",
+      has(isW) && !has(isO) ? "Business and sales matters dominate the working year." : "",
+      r.flags.clash_month ? "A clash on your month pillar points to a change of job, team or work environment." : "",
+      [r.gS, r.gB].includes("正官") && [r.gS, r.gB].includes("伤官") ? "Direct Officer and Hurting Officer meet (伤官见官): guard your words with authority figures." : "",
+      good ? "Momentum is on your side — set ambitious but concrete targets." : bad ? "Consolidate rather than expand; protect your position." : "Patient, steady work pays better than bold moves.",
+    ], [r.luck.pre ? "Focus on learning; foundations laid now shape your later career." : `In the wider ${r.lp} decade, work is shaped by ${lt}.`, "Document your achievements so they are recognised when opportunities arrive."]);
+    // WEALTH
+    const dmCtrl = relOf(c.dmEl, sEl(r.yp[0])) === 2;
+    const wealth = compose([
+      has(isW) ? (favOf(isW) ? "Wealth stars are favourable: income grows and opportunities for deals, side income or property appear." : (weak ? "Wealth is visible but heavy for you — “sees money but cannot hold it”; avoid over-extending or risky investments." : "Wealth stars bring money in motion, but spending and obligations rise too.")) : "No Wealth star rules the year, so income follows the quality of your work rather than luck.",
+      dmCtrl ? (weak ? "Your Day Master controls the year stem — a Wealth year that a weaker chart should handle conservatively." : "Your Day Master controls the year stem — a Wealth year you are strong enough to use.") : "",
+      has(isF) ? (favOf(isF) ? "Partners and friends can help you earn; shared ventures work if roles are clear." : "Rob Wealth warns of losses through friends, partners or impulse — do not lend or guarantee loans lightly.") : "",
+      has(isP) && favOf(isP) ? "Talent turns into money this year: skills, products or side projects can pay." : "",
+      r.flags.triad ? (r.flags.triad === "good" ? "A strong elemental combination supports gains in the second half." : "A strong unfavourable combination calls for a cash reserve.") : "",
+      good ? "Overall, a year to build savings and invest thoughtfully." : bad ? "Overall, protect capital first; postpone speculative moves." : "Overall, keep budgets tight and returns modest but safe.",
+    ], [lHas(isW) ? `Your current decade keeps Wealth active${r.lFav ? " in your favour" : ", so manage risk"}.` : "Build wealth slowly through savings and skills.", "Track spending monthly and keep an emergency fund.", "Prefer steady income over gambles this year."]);
+    // HEALTH
+    const yEls = [sEl(r.yp[0]), sEl(r.yp[1])];
+    const worst = yEls.reduce((a, e) => c.val[e] < c.val[a] ? e : a, yEls[0]);
+    const health = compose([
+      c.val[worst] < 0 ? `This year adds ${EL_EN[worst]}, an element your chart already finds heavy — pay attention to the ${ORGAN[worst]}.` : "The year’s elements suit your chart, supporting energy and recovery.",
+      r.flags.clash_day === "bad" || r.flags.fanyin || r.flags.fuyin ? "Your day pillar is disturbed: rest well, drive carefully and do not ignore small symptoms." : "",
+      has(g => g === "七杀") ? (favOf(g => g === "七杀") ? "Seven Killings gives energy for training; avoid overdoing it." : "Seven Killings raises stress and accident risk — slow down and build recovery time.") : "",
+      has(g => g === "食神") && favOf(g => g === "食神") ? "Eating God favours good appetite and enjoyment — keep it balanced." : "",
+      bad ? "Schedule a check-up and keep sleep, diet and exercise regular." : "Maintain your routines; prevention keeps this year smooth.",
+    ], [`Your useful element is ${EL_EN[c.useful]}: colours, foods and activities linked to it help you recharge.`, "Balance work with rest and time outdoors.", "These are traditional correspondences, not medical advice."]);
+    return { life, love, career, wealth, health };
+  }
+  const fmt = x => (x >= 0 ? "+" : "") + x.toFixed(2);
+  const Y = r => String(r.Y);
+
+  function lifeCurve(c, from, to) {
+    const out = [];
+    for (let y = from; y <= to; y++) { const r = evaluate(c, y); out.push({ year: y, age: y - c.birthYear, score: r.score, luck: r.ls, lp: r.lp, yp: r.yp }); }
+    return out;
+  }
+
+  return { S, B, EL, EL_EN, ANIMAL, HIDDEN, TG_EN, sEl, tengod, cast, evaluate, verdict, forecasts, lifeCurve, pScore, yearPillar, voidOf, wc };
+})();
+if (typeof module !== "undefined") module.exports = BZ;
+</script>
+<script>"use strict";
+const { useState, useEffect, useMemo, useRef } = React;
+const ELC = { "木": "wood", "火": "fire", "土": "earth", "金": "metal", "水": "water" };
+const Ch = ({ c, sm }) => React.createElement("span", { className: "ch " + ELC[BZ.sEl(c)] + (sm ? " sm" : "") }, c);
+const browserTz = -new Date().getTimezoneOffset() / 60;
+const THIS_YEAR = new Date().getFullYear();
+const LS_KEY = "bazi-master-profiles";
+const pid = p => "p" + Array.from(p.name + "|" + p.date + "|" + p.time).reduce((h, ch) => ((h << 5) - h + ch.codePointAt(0)) | 0, 7).toString(36).replace("-", "n");
+function lsRead() { try {
+    return JSON.parse(localStorage.getItem(LS_KEY) || "[]");
+}
+catch (e) {
+    return [];
+} }
+function lsWrite(list) { try {
+    localStorage.setItem(LS_KEY, JSON.stringify(list));
+    return true;
+}
+catch (e) {
+    return false;
+} }
+/* ---------- storage hook: db per-viewer, else localStorage ---------- */
+function useProfiles() {
+    const [list, setList] = useState(lsRead());
+    const [mode, setMode] = useState("local");
+    const [status, setStatus] = useState("");
+    const ref = useRef(null);
+    useEffect(() => {
+        let unsub = null, timer = null, alive = true;
+        (async () => {
+            if (!window.claude || !window.claude.use)
+                return;
+            const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+            if (!alive || !db || !user)
+                return;
+            const uid = await user.id();
+            if (!alive || !uid)
+                return;
+            const col = db.collection("data/users/" + uid);
+            ref.current = col;
+            setMode("cloud");
+            timer = setTimeout(() => setStatus("Saved profiles can't be reached yet."), 10000);
+            unsub = col.onSnapshot(snap => {
+                if (!snap.metadata.fromCache) {
+                    clearTimeout(timer);
+                    setStatus("");
+                }
+                const rows = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => r.name);
+                rows.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+                setList(rows);
+            }, () => { clearTimeout(timer); setStatus("Saved profiles are unavailable right now."); ref.current = null; setMode("local"); setList(lsRead()); });
+        })();
+        return () => { alive = false; if (unsub)
+            unsub(); clearTimeout(timer); };
+    }, []);
+    const save = async (p) => {
+        const row = { ...p, savedAt: Date.now() };
+        const id = pid(p);
+        if (ref.current) {
+            try {
+                await ref.current.doc(id).set(row);
+                return "Saved to your profiles.";
+            }
+            catch (e) {
+                if (e && e.code === "quota_exceeded")
+                    return "Storage is full — delete an old profile first.";
+            }
+        }
+        const l = lsRead().filter(x => x.id !== id);
+        l.unshift({ id, ...row });
+        if (lsWrite(l)) {
+            setList(l);
+            return "Saved in this browser.";
+        }
+        return "Couldn't save here — this view doesn't allow storage.";
+    };
+    const remove = async (id) => {
+        if (ref.current) {
+            try {
+                await ref.current.doc(id).delete();
+                return;
+            }
+            catch (e) { }
+        }
+        const l = lsRead().filter(x => x.id !== id);
+        lsWrite(l);
+        setList(l);
+    };
+    return { list, save, remove, mode, status };
+}
+/* ---------- chart ---------- */
+function LifeChart({ data, year, onPick, birthYear }) {
+    const W = 920, H = 300, P = { l: 44, r: 30, t: 20, b: 34 };
+    const [hov, setHov] = useState(null);
+    const x0 = data[0].year, x1 = data[data.length - 1].year;
+    const X = y => P.l + (y - x0) / (x1 - x0) * (W - P.l - P.r);
+    const Yv = v => P.t + (1 - (v + 1) / 2) * (H - P.t - P.b);
+    const line = data.map((d, i) => (i ? "L" : "M") + X(d.year).toFixed(1) + "," + Yv(d.score).toFixed(1)).join("");
+    let step = "";
+    data.forEach((d, i) => { step += (i ? "L" + X(d.year).toFixed(1) + "," + Yv(data[i - 1].luck).toFixed(1) + "L" : "M") + X(d.year).toFixed(1) + "," + Yv(d.luck).toFixed(1); });
+    const area = line + `L${X(x1)},${Yv(0)}L${X(x0)},${Yv(0)}Z`;
+    const decades = [];
+    data.forEach((d, i) => { if (i === 0 || d.lp !== data[i - 1].lp)
+        decades.push(d); });
+    const ticks = [];
+    for (let y = Math.ceil(x0 / 10) * 10; y <= x1; y += 10)
+        ticks.push(y);
+    const move = e => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const px = (e.clientX - r.left) / r.width * W;
+        const y = Math.round(x0 + (px - P.l) / (W - P.l - P.r) * (x1 - x0));
+        const d = data.find(q => q.year === Math.max(x0, Math.min(x1, y)));
+        setHov(d);
+    };
+    const sel = data.find(d => d.year === year);
+    return (React.createElement("div", { className: "chartwrap" },
+        React.createElement("div", { className: "legend" },
+            React.createElement("span", null,
+                React.createElement("i", { className: "sw line" }),
+                "Year score"),
+            React.createElement("span", null,
+                React.createElement("i", { className: "sw step" }),
+                "Luck Pillar (10-year)"),
+            React.createElement("span", { className: "hint" }, "Hover to inspect \u00B7 click a year to forecast it")),
+        React.createElement("svg", { viewBox: `0 0 ${W} ${H}`, onMouseMove: move, onMouseLeave: () => setHov(null), onClick: () => hov && onPick(hov.year), role: "img", "aria-label": "Life luck chart" },
+            React.createElement("defs", null,
+                React.createElement("clipPath", { id: "above" },
+                    React.createElement("rect", { x: "0", y: "0", width: W, height: Yv(0) })),
+                React.createElement("clipPath", { id: "below" },
+                    React.createElement("rect", { x: "0", y: Yv(0), width: W, height: H }))),
+            decades.map((d, i) => React.createElement("g", { key: i },
+                React.createElement("line", { x1: X(d.year), x2: X(d.year), y1: P.t, y2: H - P.b, className: "dec" }),
+                React.createElement("text", { x: X(d.year) + 4, y: P.t + 10, className: "declab" }, d.lp))),
+            [-1, -0.5, 0, 0.5, 1].map(v => React.createElement("g", { key: v },
+                React.createElement("line", { x1: P.l, x2: W - P.r, y1: Yv(v), y2: Yv(v), className: v === 0 ? "zero" : "grid" }),
+                React.createElement("text", { x: P.l - 8, y: Yv(v) + 4, className: "ax", textAnchor: "end" }, v > 0 ? "+" + v : v))),
+            React.createElement("text", { x: P.l - 8, y: P.t - 6, className: "ax good", textAnchor: "end" }, "good"),
+            React.createElement("text", { x: P.l - 8, y: H - P.b + 14, className: "ax bad", textAnchor: "end" }, "bad"),
+            ticks.map(t => React.createElement("text", { key: t, x: X(t), y: H - 10, className: "ax", textAnchor: "middle" },
+                t,
+                React.createElement("tspan", { className: "age" },
+                    " \u00B7 ",
+                    t - birthYear))),
+            React.createElement("path", { d: area, className: "aup", clipPath: "url(#above)" }),
+            React.createElement("path", { d: area, className: "adn", clipPath: "url(#below)" }),
+            React.createElement("path", { d: step, className: "lstep" }),
+            React.createElement("path", { d: line, className: "lyear" }),
+            sel && React.createElement("g", null,
+                React.createElement("line", { x1: X(sel.year), x2: X(sel.year), y1: P.t, y2: H - P.b, className: "selln" }),
+                React.createElement("circle", { cx: X(sel.year), cy: Yv(sel.score), r: "6", className: "seldot" })),
+            hov && React.createElement("g", null,
+                React.createElement("line", { x1: X(hov.year), x2: X(hov.year), y1: P.t, y2: H - P.b, className: "hovln" }),
+                React.createElement("circle", { cx: X(hov.year), cy: Yv(hov.score), r: "4.5", className: "hovdot" }))),
+        hov && React.createElement("div", { className: "tip", style: { left: `calc(${(X(hov.year) / W) * 100}% + ${X(hov.year) > W * 0.7 ? -190 : 12}px)` } },
+            React.createElement("b", null, hov.year),
+            " \u00B7 age ",
+            hov.age,
+            React.createElement("br", null),
+            "Year ",
+            hov.yp,
+            " \u00B7 score ",
+            React.createElement("b", null, (hov.score >= 0 ? "+" : "") + hov.score.toFixed(2)),
+            React.createElement("br", null),
+            "Luck ",
+            hov.lp,
+            " \u00B7 ",
+            (hov.luck >= 0 ? "+" : "") + hov.luck.toFixed(2))));
+}
+function Pillars({ c }) {
+    const lab = [["年柱", "Year"], ["月柱", "Month"], ["日柱", "Day"], ["时柱", "Hour"]];
+    return React.createElement("div", { className: "pillars" }, c.pillars.map((p, i) => (React.createElement("div", { key: i, className: "pcol" + (i === 2 ? " dm" : "") },
+        React.createElement("div", { className: "plab" },
+            lab[i][0],
+            React.createElement("br", null),
+            React.createElement("em", null, lab[i][1])),
+        React.createElement("div", { className: "pgod" }, i === 2 ? "Day Master" : BZ.tengod(c.dm, p[0])),
+        React.createElement("div", { className: "big" },
+            React.createElement(Ch, { c: p[0] })),
+        React.createElement("div", { className: "big" },
+            React.createElement(Ch, { c: p[1] })),
+        React.createElement("div", { className: "phid" }, BZ.HIDDEN[p[1]].split("").map(h => React.createElement("span", { key: h },
+            React.createElement(Ch, { c: h, sm: true }))))))));
+}
+function Elements({ c }) {
+    const max = Math.max(...BZ.EL.map(e => c.tot[e]));
+    return React.createElement("div", { className: "els" }, BZ.EL.map(e => {
+        const v = c.val[e];
+        return React.createElement("div", { key: e, className: "elrow" },
+            React.createElement("span", { className: "eln" },
+                React.createElement(Ch, { c: e }),
+                " ",
+                BZ.EL_EN[e]),
+            React.createElement("span", { className: "elbar" },
+                React.createElement("i", { className: ELC[e], style: { width: (c.tot[e] / max * 100) + "%" } })),
+            React.createElement("span", { className: "eltag " + (v > 0.2 ? "fav" : v < -0.2 ? "unf" : "neu") }, e === c.useful ? "Useful" : v > 0.2 ? "Favourable" : v < -0.2 ? "Unfavourable" : "Neutral"));
+    }));
+}
+const TYPE_TXT = { strong: "Strong", weak: "Weak", balanced: "Balanced", dominant: "Dominant (follows its own element)", follow: "Very weak (follows the strongest force)" };
+const ICON = { life: "命", love: "缘", career: "业", wealth: "财", health: "康" };
+const TITLE = { life: "Life", love: "Love", career: "Career", wealth: "Wealth", health: "Health" };
+function App() {
+    const [f, setF] = useState({ name: "", date: "1990-05-20", time: "08:30", sex: "M", tz: browserTz, year: THIS_YEAR });
+    const [run, setRun] = useState(null);
+    const [msg, setMsg] = useState("");
+    const store = useProfiles();
+    const set = (k, v) => setF(o => ({ ...o, [k]: v }));
+    const calc = (g = f) => {
+        if (!g.date || !g.time) {
+            setMsg("Enter a birth date and time.");
+            return;
+        }
+        const by = +g.date.slice(0, 4), yr = +g.year;
+        if (!(yr >= by && yr <= by + 110)) {
+            setMsg("The prediction year must fall within the person’s lifetime.");
+            return;
+        }
+        setMsg("");
+        setRun({ ...g, year: yr });
+        if (window.innerWidth < 900)
+            setTimeout(() => { const m = document.querySelector("main"); if (m)
+                m.scrollIntoView({ behavior: "smooth" }); }, 60);
+    };
+    const chart = useMemo(() => run && BZ.cast({ date: run.date, time: run.time, sex: run.sex, tz: +run.tz }), [run && run.date, run && run.time, run && run.sex, run && run.tz]);
+    const res = useMemo(() => chart && BZ.evaluate(chart, run.year), [chart, run && run.year]);
+    const fc = useMemo(() => res && BZ.forecasts(chart, res), [res]);
+    const curve = useMemo(() => chart && BZ.lifeCurve(chart, chart.birthYear, chart.birthYear + 90), [chart]);
+    const vd = res && BZ.verdict(res.score);
+    const pick = y => { set("year", y); setRun(r => ({ ...r, year: y })); };
+    const doSave = async () => {
+        if (!f.name.trim()) {
+            setMsg("Add a name before saving.");
+            return;
+        }
+        setMsg(await store.save({ name: f.name.trim(), date: f.date, time: f.time, sex: f.sex, tz: +f.tz, year: +f.year }));
+    };
+    const load = p => { var _a; const g = { name: p.name, date: p.date, time: p.time, sex: p.sex, tz: (_a = p.tz) !== null && _a !== void 0 ? _a : browserTz, year: THIS_YEAR }; setF(g); calc(g); };
+    const tzs = [];
+    for (let z = -12; z <= 14; z += 0.5)
+        tzs.push(z);
+    return React.createElement("div", { className: "app" },
+        React.createElement("header", { className: "hero" },
+            React.createElement("div", { className: "brand" },
+                React.createElement("span", { className: "seal" }, "\u516B\u5B57"),
+                React.createElement("div", null,
+                    React.createElement("h1", null, "BaZi Master"),
+                    React.createElement("p", null,
+                        "\u516B\u5B57\u5927\u5E08 \u00B7 Annual forecast calculator based on ",
+                        React.createElement("i", null, "The BaZi Handbook"),
+                        " by Kang Puthearoath")))),
+        React.createElement("div", { className: "grid" },
+            React.createElement("aside", { className: "panel" },
+                React.createElement("h2", null, "Birth details"),
+                React.createElement("label", null,
+                    "Name",
+                    React.createElement("input", { value: f.name, onChange: e => set("name", e.target.value), placeholder: "e.g. Sophea" })),
+                React.createElement("div", { className: "row2" },
+                    React.createElement("label", null,
+                        "Birth date",
+                        React.createElement("input", { type: "date", value: f.date, onChange: e => set("date", e.target.value) })),
+                    React.createElement("label", null,
+                        "Birth hour",
+                        React.createElement("input", { type: "time", value: f.time, onChange: e => set("time", e.target.value) }))),
+                React.createElement("div", { className: "row2" },
+                    React.createElement("fieldset", null,
+                        React.createElement("legend", null, "Sex"),
+                        React.createElement("div", { className: "seg" }, [["M", "Male"], ["F", "Female"]].map(([k, l]) => React.createElement("button", { key: k, type: "button", className: f.sex === k ? "on" : "", onClick: () => set("sex", k) }, l)))),
+                    React.createElement("label", null,
+                        "Time zone of birth",
+                        React.createElement("select", { value: f.tz, onChange: e => set("tz", +e.target.value) }, tzs.map(z => React.createElement("option", { key: z, value: z },
+                            "UTC",
+                            z >= 0 ? "+" : "",
+                            z))))),
+                React.createElement("label", null,
+                    "Year to predict",
+                    React.createElement("input", { type: "number", value: f.year, onChange: e => set("year", e.target.value) })),
+                React.createElement("div", { className: "btns" },
+                    React.createElement("button", { className: "primary", onClick: () => calc() }, "Read the year"),
+                    React.createElement("button", { className: "ghost", onClick: doSave }, "Save profile")),
+                msg && React.createElement("p", { className: "msg" }, msg),
+                React.createElement("h3", null,
+                    "Saved profiles ",
+                    React.createElement("small", null, store.mode === "cloud" ? "· private to you, on any device" : "· this browser")),
+                store.status && React.createElement("p", { className: "msg" }, store.status),
+                store.list.length === 0 ? React.createElement("p", { className: "empty" },
+                    "No saved profiles yet. Fill in the details and press ",
+                    React.createElement("b", null, "Save profile"),
+                    " to reopen them next time.") :
+                    React.createElement("ul", { className: "profiles" }, store.list.map(p => React.createElement("li", { key: p.id },
+                        React.createElement("button", { className: "pbtn", onClick: () => load(p) },
+                            React.createElement("b", null, p.name),
+                            React.createElement("span", null,
+                                p.date,
+                                " \u00B7 ",
+                                p.time,
+                                " \u00B7 ",
+                                p.sex === "M" ? "Male" : "Female")),
+                        React.createElement("button", { className: "del", "aria-label": "Delete " + p.name, onClick: () => store.remove(p.id) }, "\u00D7")))),
+                React.createElement("p", { className: "fine" }, "Day changes at 23:00 (\u5B50 hour). Year and month follow the solar terms (\u7ACB\u6625 starts the year).")),
+            React.createElement("main", null, !run ? React.createElement("section", { className: "card intro" },
+                React.createElement("h2", null, "How it works"),
+                React.createElement("ol", null,
+                    React.createElement("li", null, "Casts the Four Pillars from the solar calendar."),
+                    React.createElement("li", null, "Measures the Day Master\u2019s strength and finds the Useful and Unfavourable elements."),
+                    React.createElement("li", null, "Lays out the ten-year Luck Pillars."),
+                    React.createElement("li", null, "Scores the year with the 40/60 rule and the trigger rules of chapter 12 \u2014 clashes, combinations, triads, punishments, Void.")),
+                React.createElement("p", null,
+                    "Enter birth details and press ",
+                    React.createElement("b", null, "Read the year"),
+                    ".")) : React.createElement(React.Fragment, null,
+                React.createElement("section", { className: "card verdict " + vd.tone },
+                    React.createElement("div", { className: "vbig" }, vd.short),
+                    React.createElement("div", { className: "vtxt" },
+                        React.createElement("div", { className: "vk" },
+                            run.name || "Your",
+                            run.name ? "’s" : "",
+                            " forecast for ",
+                            run.year),
+                        React.createElement("h2", null, vd.label),
+                        React.createElement("div", { className: "vmeta" },
+                            "Year pillar ",
+                            React.createElement("b", null,
+                                React.createElement(Ch, { c: res.yp[0] }),
+                                React.createElement(Ch, { c: res.yp[1] })),
+                            " ",
+                            BZ.ANIMAL[BZ.B.indexOf(res.yp[1])],
+                            " \u00B7 Luck Pillar ",
+                            React.createElement("b", null,
+                                React.createElement(Ch, { c: res.lp[0] }),
+                                React.createElement(Ch, { c: res.lp[1] })),
+                            res.luck.pre ? " (before first luck)" : ` from age ${res.luck.age}`,
+                            " \u00B7 Age ",
+                            res.age),
+                        React.createElement("div", { className: "meter" },
+                            React.createElement("i", { style: { left: ((res.score + 1) / 2 * 100) + "%" } })),
+                        React.createElement("div", { className: "mlab" },
+                            React.createElement("span", null, "Difficult"),
+                            React.createElement("span", null, "Mixed"),
+                            React.createElement("span", null, "Very good")))),
+                React.createElement("section", { className: "fc" }, Object.keys(fc).map(k => React.createElement("article", { key: k, className: "card fcard" },
+                    React.createElement("div", { className: "fic" }, ICON[k]),
+                    React.createElement("h3", null, TITLE[k]),
+                    React.createElement("p", null, fc[k])))),
+                React.createElement("section", { className: "card" },
+                    React.createElement("h2", null,
+                        "Life luck curve ",
+                        React.createElement("small", null,
+                            chart.birthYear,
+                            "\u2013",
+                            chart.birthYear + 90)),
+                    React.createElement(LifeChart, { data: curve, year: run.year, onPick: pick, birthYear: chart.birthYear })),
+                React.createElement("section", { className: "two" },
+                    React.createElement("div", { className: "card" },
+                        React.createElement("h2", null, "Four Pillars"),
+                        React.createElement(Pillars, { c: chart }),
+                        React.createElement("p", { className: "small" },
+                            "Day Master ",
+                            React.createElement("b", null,
+                                React.createElement(Ch, { c: chart.dm }),
+                                " ",
+                                BZ.EL_EN[chart.dmEl]),
+                            " \u00B7 ",
+                            TYPE_TXT[chart.type],
+                            " (",
+                            Math.round(chart.ratio * 100),
+                            "% support). Useful element: ",
+                            React.createElement("b", null, BZ.EL_EN[chart.useful]),
+                            "; unfavourable: ",
+                            React.createElement("b", null, BZ.EL_EN[chart.unfavourable]),
+                            "."),
+                        chart.climate && React.createElement("p", { className: "small" }, chart.climate)),
+                    React.createElement("div", { className: "card" },
+                        React.createElement("h2", null, "Element balance"),
+                        React.createElement(Elements, { c: chart }),
+                        React.createElement("h3", { className: "mt" }, "Luck Pillars"),
+                        React.createElement("div", { className: "lucks" }, chart.lucks.slice(0, 8).map(l => React.createElement("div", { key: l.age, className: "lk" + (res.lp === l.p && !res.luck.pre ? " on" : "") },
+                            React.createElement("span", { className: "la" }, l.age),
+                            React.createElement(Ch, { c: l.p[0], sm: true }),
+                            React.createElement(Ch, { c: l.p[1], sm: true }),
+                            React.createElement("span", { className: "ly" }, l.year)))),
+                        React.createElement("p", { className: "small" },
+                            chart.forward ? "Forward" : "Backward",
+                            " luck, starting at age ",
+                            chart.startAge,
+                            "."))),
+                res.notes.length > 0 && React.createElement("section", { className: "card" },
+                    React.createElement("h2", null, "What triggers this year"),
+                    React.createElement("ul", { className: "notes" }, res.notes.map((n, i) => React.createElement("li", { key: i }, n)))),
+                React.createElement("p", { className: "fine center" }, "A tool for reflection based on traditional BaZi rules, not a substitute for professional medical, legal or financial advice.")))));
+}
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App, null));
+</script>
+</body></html>
